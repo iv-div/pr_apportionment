@@ -121,6 +121,7 @@ function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   return svg.join('\n');}
 
 // ---------- main ----------
+const form = document.getElementById('inputForm');
 form.addEventListener('submit',e=>{
   e.preventDefault();
   const totalSeats=parseInt(document.getElementById('totalSeats').value);
