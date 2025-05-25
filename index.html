@@ -41,8 +41,7 @@
       <tbody id="partyTable"></tbody>
     </table>
     <div class="flex gap-4 mb-4">
-      <button type="button" id="addParty" class="bg-green-600 hover:bg-green-700 text-white font-semibold rounded px-4 py-2">Add Party</button>
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-2">Generate</button>
+      <button type="button" id="addParty" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded px-4 py-2">Add Party</button></div><div class="mb-4"><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded text-lg px-6 py-3">Generate</button>
     </div>
   </form>
 
@@ -59,7 +58,7 @@ function addPartyRow(index) {
   row.innerHTML=`<td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${index+1}" /></td>
                  <td class="border p-1"><input type="number" class="w-full border rounded p-1" min="0" value="0" /></td>
                  <td class="border p-1"><input type="color" value="${defaultColors[colorIndex]}" /></td>
-                 <td class="border p-1"><button type="button" class="remove-party bg-red-500 hover:bg-red-600 text-white rounded px-2 py-1 text-xs">Remove</button></td>`;
+                 <td class="border p-1"><button type="button" class="remove-party text-gray-500 hover:text-gray-700 text-xl font-bold leading-none">&times;</button></td>`;
   tbody.appendChild(row);
   
   // Add remove functionality
@@ -207,7 +206,7 @@ function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   
   const svg=[`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
   svg.push(`<rect width="100%" height="100%" fill="white"/>`); // White background
-  svg.push(`<text x="${cx}" y="${60*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  svg.push(`<text x="${cx}" y="${40*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
   
   let idx=0;
   const scaledSeatR = seatR * scaleFactor;
@@ -240,9 +239,19 @@ form.addEventListener('submit',e=>{
   const totalSeats=parseInt(document.getElementById('totalSeats').value);
   if(!(totalSeats>=1&&totalSeats<=3000))return alert('Total seats must be between 1 and 3000');
   const barrier=parseFloat(document.getElementById('barrier').value)||0;
-  const names=[...tbody.querySelectorAll('tr')].map(tr=>tr.children[0].querySelector('input').value.trim());
-  const votes=[...tbody.querySelectorAll('tr')].map(tr=>Math.max(0,parseInt(tr.children[1].querySelector('input').value)||0));
-  const colors=[...tbody.querySelectorAll('tr')].map(tr=>tr.children[2].querySelector('input').value);
+  const rows = [...tbody.querySelectorAll('tr')];
+  const filtered = rows.map(tr => {
+    const name = tr.children[0].querySelector('input').value.trim();
+    const vote = parseInt(tr.children[1].querySelector('input').value) || 0;
+    const color = tr.children[2].querySelector('input').value;
+    return { name, vote, color };
+  }).filter(p => p.vote > 0);
+
+  if (filtered.length === 0) return alert('All parties have 0 votes');
+
+  const names = filtered.map(p => p.name);
+  const votes = filtered.map(p => p.vote);
+  const colors = filtered.map(p => p.color);
   const totalVotes=votes.reduce((a,b)=>a+b,0);
   const thresh=totalVotes*barrier/100;
   const votesFiltered=votes.map(v=>v>=thresh? v:0);
