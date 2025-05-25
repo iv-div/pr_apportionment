@@ -57,12 +57,26 @@ for(let i=0;i<10;i++){
   tbody.appendChild(row);
 }
 
-// Disable mouse wheel on number inputs
+// Disable mouse wheel and drag on number inputs
 document.addEventListener('wheel', function(e) {
   if (e.target.type === 'number') {
     e.preventDefault();
   }
 }, { passive: false });
+
+// Disable drag behavior on number inputs
+document.addEventListener('mousedown', function(e) {
+  if (e.target.type === 'number') {
+    e.target.addEventListener('mousemove', preventDrag);
+    e.target.addEventListener('mouseup', function() {
+      e.target.removeEventListener('mousemove', preventDrag);
+    }, { once: true });
+  }
+});
+
+function preventDrag(e) {
+  e.preventDefault();
+}
 
 // ---------- quota helpers ----------
 const hareQuota   =(V,S)=>V/S;
