@@ -6,7 +6,7 @@
 <title>Interactive Parliament Diagram</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  svg text{font-family:system-ui,Arial,sans-serif}
+  svg text { font-family: system-ui, Arial, sans-serif; }
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -15,16 +15,11 @@
   input[type="number"] {
     -moz-appearance: textfield;
   }
-  /* Disable mouse wheel on number inputs */
-  input[type="number"]:focus {
-    -moz-appearance: textfield;
-  }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center py-8">
   <h1 class="text-3xl font-bold mb-6">Interactive Parliament Diagram</h1>
 
-  <!-- INPUT FORM -->
   <form id="inputForm" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mb-10">
     <div class="grid grid-cols-2 gap-4 mb-4">
       <label class="font-semibold flex flex-col">Total seats
@@ -32,6 +27,21 @@
       </label>
       <label class="font-semibold flex flex-col">Barrier % (optional)
         <input type="number" id="barrier" class="border rounded p-1" min="0" max="99" placeholder="0" />
+      </label>
+      <label class="font-semibold flex flex-col">Tie-break strategy
+        <select id="tieBreakStrategy" class="border rounded p-1">
+          <option value="random" selected>Random (lot)</option>
+          <option value="mostVotes">Party with most votes</option>
+          <option value="leastVotes">Party with least votes</option>
+          <option value="lowestIndex">Party with lowest index</option>
+          <option value="disputed">Mark as disputed</option>
+        </select>
+      </label>
+      <label class="font-semibold flex flex-col">Imperiali Over-Allocation
+        <select id="imperialiStrategy" class="border rounded p-1">
+          <option value="shrinkQuota" selected>Shrink quota (default)</option>
+          <option value="increaseSeats">Increase seats</option>
+        </select>
       </label>
     </div>
     <table class="w-full text-sm mb-4 border-collapse">
@@ -41,264 +51,198 @@
       <tbody id="partyTable"></tbody>
     </table>
     <div class="flex gap-4 mb-4">
-      <button type="button" id="addParty" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded px-4 py-2">Add Party</button></div><div class="mb-4"><button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded text-lg px-6 py-3">Generate</button>
+      <button type="button" id="addParty" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded px-4 py-2">Add Party</button>
+    </div>
+    <div class="mb-4">
+      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded text-lg px-6 py-3">Generate</button>
     </div>
   </form>
 
-  <!-- OUTPUT -->
   <div id="results" class="w-full max-w-5xl space-y-12"></div>
 
-<script>
-const defaultColors=['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#66c2a5','#1f78b4','#33a02c','#e31a1c','#ff7f00','#6a3d9a','#b15928','#a6cee3','#b2df8a','#fb9a99','#fdbf6f'];
-const tbody=document.getElementById('partyTable');
+  <script>
+    const defaultColors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'];
+    const tbody = document.getElementById('partyTable');
 
-function addPartyRow(index) {
-  const row=document.createElement('tr');
-  const colorIndex = index % defaultColors.length;
-  row.innerHTML=`<td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${index+1}" /></td>
-                 <td class="border p-1"><input type="number" class="w-full border rounded p-1" min="0" value="0" /></td>
-                 <td class="border p-1"><input type="color" value="${defaultColors[colorIndex]}" /></td>
-                 <td class="border p-1"><button type="button" class="remove-party text-gray-500 hover:text-gray-700 text-xl font-bold leading-none">&times;</button></td>`;
-  tbody.appendChild(row);
-  
-  // Add remove functionality
-  row.querySelector('.remove-party').addEventListener('click', function() {
-    if (tbody.children.length > 1) { // Keep at least one row
-      row.remove();
+    function addPartyRow(index) {
+      const row = document.createElement('tr');
+      const colorIndex = index % defaultColors.length;
+      row.innerHTML = `
+        <td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${index+1}" /></td>
+        <td class="border p-1"><input type="number" class="w-full border rounded p-1" min="0" value="0" /></td>
+        <td class="border p-1"><input type="color" value="${defaultColors[colorIndex]}" /></td>
+        <td class="border p-1"><button type="button" class="remove-party text-gray-500 hover:text-gray-700 text-xl font-bold leading-none">&times;</button></td>`;
+      tbody.appendChild(row);
+      row.querySelector('.remove-party').addEventListener('click', function () {
+        if (tbody.children.length > 1) row.remove();
+      });
     }
-  });
-}
 
-// Initialize with 10 parties
-for(let i=0;i<10;i++){
-  addPartyRow(i);
-}
+    for (let i = 0; i < 5; i++) addPartyRow(i);
 
-// Add party button functionality
-document.getElementById('addParty').addEventListener('click', function() {
-  addPartyRow(tbody.children.length);
-});
+    document.getElementById('addParty').addEventListener('click', () => addPartyRow(tbody.children.length));
 
-// Disable mouse wheel and drag on number inputs
-document.addEventListener('wheel', function(e) {
-  if (e.target.type === 'number') {
-    e.preventDefault();
-  }
-}, { passive: false });
+    const tieBreakers = {
+      random: (c) => c[Math.floor(Math.random() * c.length)].index,
+      mostVotes: (c) => c.reduce((a,b) => b.votes > a.votes ? b : a).index,
+      leastVotes: (c) => c.reduce((a,b) => b.votes < a.votes ? b : a).index,
+      lowestIndex: (c) => c.reduce((a,b) => b.index < a.index ? b : a).index,
+      disputed: (c) => ({ disputed: true, between: c.map(x => x.index) })
+    };
 
-// Disable drag behavior on number inputs
-document.addEventListener('mousedown', function(e) {
-  if (e.target.type === 'number') {
-    e.target.addEventListener('mousemove', preventDrag);
-    e.target.addEventListener('mouseup', function() {
-      e.target.removeEventListener('mousemove', preventDrag);
-    }, { once: true });
-  }
-});
+    function largestRemainder(votes, seats, quotaFn, tieBreaker) {
+      const totalVotes = votes.reduce((a, b) => a + b, 0);
+      const quota = quotaFn(totalVotes, seats);
+      const base = votes.map(v => Math.floor(v / quota));
+      const remainders = votes.map((v, i) => v - base[i] * quota);
+      let allocated = base.reduce((a, b) => a + b, 0);
+      const disputedSeats = [];
 
-function preventDrag(e) {
-  e.preventDefault();
-}
-
-// ---------- quota helpers ----------
-const hareQuota   =(V,S)=>V/S;
-const droopQuota  =(V,S)=>Math.floor(V/(S+1))+1;
-const imperialiQuota=(V,S)=>V/(S+2);
-
-// ---------- largest remainder ----------
-function largestRemainder(votes,seats,quotaFn){
-  if(seats<=0)throw RangeError('seats must be positive');
-  if(votes.some(v=>v<0))throw RangeError('votes must be ≥0');
-  const totalVotes=votes.reduce((a,b)=>a+b,0);
-  const quota=quotaFn(totalVotes,seats);
-  const seatCounts=votes.map(v=>Math.floor(v/quota));
-  let allocated=seatCounts.reduce((a,b)=>a+b,0);
-  // over‑allocation → shrink quota slightly until fits
-  let scale=1.000001;
-  while(allocated>seats){
-    const q=quota*scale; scale*=1.000001;
-    seatCounts.forEach((_,i)=>seatCounts[i]=Math.floor(votes[i]/q));
-    allocated=seatCounts.reduce((a,b)=>a+b,0);
-  }
-  const remainders=votes.map((v,i)=>v-seatCounts[i]*quota);
-  while(allocated<seats){
-    // max remainder; tie→higher votes, then lower index
-    let idx=0;for(let i=1;i<votes.length;i++){
-      if(remainders[i]>remainders[idx]||
-        (remainders[i]===remainders[idx]&&votes[i]>votes[idx])) idx=i;}
-    seatCounts[idx]++; remainders[idx]-=quota; allocated++; }
-  return seatCounts;}
-
-// ---------- divisor method with binary heap ----------
-class MaxHeap{constructor(){this.h=[]}
-  push(o){this.h.push(o);this.up(this.h.length-1);}  up(i){while(i){const p=(i-1)>>1;if(this.h[p].val>=this.h[i].val)break;[this.h[p],this.h[i]]=[this.h[i],this.h[p]];i=p;}}
-  pop(){if(!this.h.length)return null;const top=this.h[0];const last=this.h.pop();if(this.h.length){this.h[0]=last;this.down(0);}return top;}  down(i){for(;;){let l=i*2+1,r=l+1,b=i;if(l<this.h.length&&this.h[l].val>this.h[b].val)b=l;if(r<this.h.length&&this.h[r].val>this.h[b].val)b=r;if(b===i)break;[this.h[b],this.h[i]]=[this.h[i],this.h[b]];i=b;}}
-}
-function divisorMethod(votes,seats,divFn){if(seats<=0)throw RangeError('seats positive');
-  const counts=Array(votes.length).fill(0);
-  const heap=new MaxHeap();
-  votes.forEach((v,i)=>heap.push({val:v/divFn(1),idx:i,div:1}));
-  for(let s=0;s<seats;s++){
-    const top=heap.pop();counts[top.idx]++;
-    const nextDiv=top.div+1;
-    heap.push({val:votes[top.idx]/divFn(nextDiv),idx:top.idx,div:nextDiv});
-  }
-  return counts;}
-
-const dHondtDiv=k=>k; const sainteLagueDiv=k=>2*k-1;
-
-// ---------- SVG to Image converter ----------
-function svgToImage(svgString, callback) {
-  const img = new Image();
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-  
-  img.onload = function() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas size to match SVG
-    const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
-    const svgEl = svgDoc.documentElement;
-    const width = parseInt(svgEl.getAttribute('width'));
-    const height = parseInt(svgEl.getAttribute('height'));
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    // Draw SVG to canvas
-    ctx.drawImage(img, 0, 0);
-    
-    // Convert to PNG data URL
-    const dataUrl = canvas.toDataURL('image/png');
-    URL.revokeObjectURL(url);
-    callback(dataUrl);
-  };
-  
-  img.src = url;
-}
-
-// ---------- SVG builder with dynamic scaling ----------
-function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
-  const total=counts.reduce((a,b)=>a+b,0);
-  const partyObjs=counts.map((c,i)=>({c,color:colors[i],name:names[i]||`P${i+1}`,idx:i})).filter(p=>p.c>0).sort((a,b)=>b.c-a.c);
-  const coords=[];const visible=[];
-  let remaining=total,row=0,rStep=seatR*2+gap,outerR=0;
-  while(remaining>0){const radius=innerR+row*rStep+seatR;outerR=radius;
-    const cap=Math.max(1,Math.floor(Math.PI*radius/(seatR*2+gap)));
-    const seatsRow=Math.min(remaining,cap);
-    // full grid for uniform spacing
-    for(let i=0;i<cap;i++){
-      const theta=Math.PI-(i+0.5)*Math.PI/cap;
-      coords.push([radius*Math.cos(theta),radius*Math.sin(theta)]);
-      visible.push(i<seatsRow);
-    }
-    remaining-=seatsRow;row++; }
-  
-  // Dynamic scaling based on seats count
-  const scaleFactor = Math.max(1, Math.sqrt(total / 300));
-  const baseOuterR = outerR;
-  const totalWidth = (baseOuterR * 2 + 200) * scaleFactor;
-  const totalHeight = (innerR + row * rStep + 160) * scaleFactor; // еще больше отступа сверху
-  const cx = (baseOuterR + 40) * scaleFactor;
-  const cy = totalHeight - 80 * scaleFactor;
-  
-  const svg=[`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
-  svg.push(`<rect width="100%" height="100%" fill="white"/>`); // White background
-  svg.push(`<text x="${cx}" y="${40*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
-  
-  let idx=0;
-  const scaledSeatR = seatR * scaleFactor;
-  partyObjs.forEach(p=>{
-    for(let k=0;k<p.c;k++){
-      while(!visible[idx])idx++;
-      const [x,y]=coords[idx++];
-      svg.push(`<circle cx="${(x+baseOuterR+40)*scaleFactor}" cy="${cy-y*scaleFactor}" r="${scaledSeatR}" fill="${p.color}" stroke="white" stroke-width="${0.6*scaleFactor}"/>`);
-    }
-  });
-  
-  svg.push(`<text x="${cx}" y="${cy+scaledSeatR*2+20*scaleFactor}" text-anchor="middle" font-size="${14*scaleFactor}" font-family="sans-serif">${total} seats</text>`);
-  
-  const legX = cx + baseOuterR * scaleFactor + 50 * scaleFactor;
-  const legY = 80 * scaleFactor;
-  partyObjs.forEach((p,i)=>{
-    const y = legY + i * 25 * scaleFactor;
-    svg.push(`<rect x="${legX}" y="${y-8*scaleFactor}" width="${15*scaleFactor}" height="${15*scaleFactor}" fill="${p.color}"/>`);
-    svg.push(`<text x="${legX+25*scaleFactor}" y="${y}" alignment-baseline="middle" font-size="${14*scaleFactor}" font-family="sans-serif">${p.name} – ${p.c}</text>`);
-  });
-  
-  svg.push('</svg>');
-  return svg.join('\n');
-}
-
-// ---------- main ----------
-const form = document.getElementById('inputForm');
-form.addEventListener('submit',e=>{
-  e.preventDefault();
-  const totalSeats=parseInt(document.getElementById('totalSeats').value);
-  if(!(totalSeats>=1&&totalSeats<=3000))return alert('Total seats must be between 1 and 3000');
-  const barrier=parseFloat(document.getElementById('barrier').value)||0;
-  const rows = [...tbody.querySelectorAll('tr')];
-  const filtered = rows.map(tr => {
-    const name = tr.children[0].querySelector('input').value.trim();
-    const vote = parseInt(tr.children[1].querySelector('input').value) || 0;
-    const color = tr.children[2].querySelector('input').value;
-    return { name, vote, color };
-  }).filter(p => p.vote > 0);
-
-  if (filtered.length === 0) return alert('All parties have 0 votes');
-
-  const names = filtered.map(p => p.name);
-  const votes = filtered.map(p => p.vote);
-  const colors = filtered.map(p => p.color);
-  const totalVotes=votes.reduce((a,b)=>a+b,0);
-  const thresh=totalVotes*barrier/100;
-  const votesFiltered=votes.map(v=>v>=thresh? v:0);
-  if(votesFiltered.reduce((a,b)=>a+b,0)===0)return alert('No party passed barrier');
-  const methods=[
-    {name:'Hare quota', counts:largestRemainder(votesFiltered,totalSeats,hareQuota)},
-    {name:'Droop quota',counts:largestRemainder(votesFiltered,totalSeats,droopQuota)},
-    {name:'Sainte-Laguë',counts:divisorMethod(votesFiltered,totalSeats,sainteLagueDiv)},
-    {name:"D'Hondt",   counts:divisorMethod(votesFiltered,totalSeats,dHondtDiv)},
-    {name:'Imperiali quota',counts:largestRemainder(votesFiltered,totalSeats,imperialiQuota)}
-  ];
-  const res=document.getElementById('results');res.innerHTML='<p class="text-center text-lg">Generating images...</p>';
-  
-  let processed = 0;
-  const imageContainer = document.createElement('div');
-  imageContainer.className = 'space-y-8';
-  
-  methods.forEach((m, index) => {
-    const svg = buildSVG(m.name, m.counts, names, colors);
-    svgToImage(svg, (dataUrl) => {
-      const imgWrapper = document.createElement('div');
-      imgWrapper.className = 'bg-white rounded-lg shadow-md p-4';
-      
-      const img = document.createElement('img');
-      img.src = dataUrl;
-      img.alt = `${m.name} Parliament Diagram`;
-      img.className = 'max-w-full h-auto mx-auto';
-      
-      // Add download button
-      const downloadBtn = document.createElement('a');
-      downloadBtn.href = dataUrl;
-      downloadBtn.download = `parliament-${m.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`;
-      downloadBtn.className = 'inline-block mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded px-4 py-2 text-sm';
-      downloadBtn.textContent = 'Download PNG';
-      
-      imgWrapper.appendChild(img);
-      imgWrapper.appendChild(downloadBtn);
-      imageContainer.appendChild(imgWrapper);
-      
-      processed++;
-      if (processed === methods.length) {
-        res.innerHTML = '';
-        res.appendChild(imageContainer);
+      while (allocated < seats) {
+        const maxRem = Math.max(...remainders);
+        const candidates = remainders.map((r, i) => ({ index: i, votes: votes[i], remainder: r })).filter(c => c.remainder === maxRem);
+        const chosen = tieBreaker(candidates);
+        if (typeof chosen === 'object' && chosen.disputed) {
+          disputedSeats.push({ between: chosen.between });
+          allocated++; 
+        } else {
+          base[chosen]++; remainders[chosen] = -1; allocated++;
+        }
       }
+
+      base.disputedSeats = disputedSeats;
+      return base;
+    }
+
+    const hareQuota = (V, S) => V / S;
+    const droopQuota = (V, S) => Math.floor(V / (S + 1)) + 1;
+    const imperialiQuota = (V, S) => V / (S + 2);
+
+    function fixOverAllocationShrinkQuota(votes, seats, quotaFn) {
+      const totalVotes = votes.reduce((a, b) => a + b, 0);
+      let quota = quotaFn(totalVotes, seats);
+      let counts = votes.map(v => Math.floor(v / quota));
+      let allocated = counts.reduce((a, b) => a + b, 0);
+      let scale = 1.000001;
+      while (allocated > seats) {
+        quota *= scale;
+        counts = votes.map(v => Math.floor(v / quota));
+        allocated = counts.reduce((a, b) => a + b, 0);
+        scale *= 1.000001;
+      }
+      return counts;
+    }
+
+    function fixOverAllocationIncreaseSeats(votes, seats, quotaFn) {
+      const totalVotes = votes.reduce((a, b) => a + b, 0);
+      let curSeats = seats;
+      let quota = quotaFn(totalVotes, curSeats);
+      let counts = votes.map(v => Math.floor(v / quota));
+      while (counts.reduce((a, b) => a + b, 0) > seats) {
+        curSeats++;
+        quota = quotaFn(totalVotes, curSeats);
+        counts = votes.map(v => Math.floor(v / quota));
+      }
+      return counts;
+    }
+
+    const form = document.getElementById('inputForm');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const totalSeats = parseInt(document.getElementById('totalSeats').value);
+      const barrier = parseFloat(document.getElementById('barrier').value) || 0;
+      const tieBreakStrategy = document.getElementById('tieBreakStrategy').value;
+      const imperialiStrategy = document.getElementById('imperialiStrategy').value;
+      const tieBreaker = tieBreakers[tieBreakStrategy];
+
+      const data = [...tbody.querySelectorAll('tr')].map(tr => {
+        return {
+          name: tr.children[0].querySelector('input').value.trim() || 'Unnamed',
+          votes: parseInt(tr.children[1].querySelector('input').value) || 0,
+          color: tr.children[2].querySelector('input').value
+        };
+      }).filter(p => p.votes > 0);
+
+      const totalVotes = data.reduce((sum, p) => sum + p.votes, 0);
+      const threshold = totalVotes * barrier / 100;
+      const filteredVotes = data.map(p => (p.votes >= threshold ? p.votes : 0));
+
+      const imperiali = imperialiStrategy === 'increaseSeats' ? fixOverAllocationIncreaseSeats : fixOverAllocationShrinkQuota;
+
+      const methods = [
+        { name: 'Hare quota', result: largestRemainder(filteredVotes, totalSeats, hareQuota, tieBreaker) },
+        { name: 'Droop quota', result: largestRemainder(filteredVotes, totalSeats, droopQuota, tieBreaker) },
+        { name: 'Imperiali quota', result: imperiali(filteredVotes, totalSeats, imperialiQuota) }
+      ];
+
+      const results = document.getElementById('results');
+      results.innerHTML = '';
+
+      methods.forEach(method => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bg-white p-4 rounded shadow';
+
+        const title = document.createElement('h2');
+        title.className = 'text-xl font-bold mb-2';
+        title.textContent = method.name;
+        wrapper.appendChild(title);
+
+        const disputed = method.result.disputedSeats || [];
+        const counts = method.result.filter((_, i) => i >= 0);
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', 600);
+        svg.setAttribute('height', 300);
+        svg.innerHTML = `
+          <defs>
+            <pattern id="disputedPattern" patternUnits="userSpaceOnUse" width="6" height="6">
+              <path d="M0,0 l6,6 M-1,1 l2,-2 M5,7 l2,-2" stroke="black" stroke-width="1"/>
+            </pattern>
+          </defs>
+        `;
+
+        const radius = 12;
+        const cxStart = 50;
+        const cy = 150;
+        let x = cxStart;
+
+        counts.forEach((count, i) => {
+          for (let j = 0; j < count; j++) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', cy);
+            circle.setAttribute('r', radius);
+            circle.setAttribute('fill', data[i].color);
+            circle.setAttribute('stroke', 'black');
+            svg.appendChild(circle);
+            x += 2 * radius + 4;
+          }
+        });
+
+        disputed.forEach((entry, index) => {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', x);
+          circle.setAttribute('cy', cy);
+          circle.setAttribute('r', radius);
+          circle.setAttribute('fill', 'url(#disputedPattern)');
+          circle.setAttribute('stroke', 'black');
+          circle.setAttribute('title', 'Disputed');
+          svg.appendChild(circle);
+          x += 2 * radius + 4;
+        });
+
+        wrapper.appendChild(svg);
+
+        if (disputed.length > 0) {
+          const p = document.createElement('p');
+          p.className = 'text-red-600 mt-2';
+          p.textContent = 'Disputed seats: ' + disputed.map(d => d.between.map(i => data[i].name).join(' vs ')).join('; ');
+          wrapper.appendChild(p);
+        }
+
+        results.appendChild(wrapper);
+      });
     });
-  });
-});
-</script>
+  </script>
 </body>
 </html>
