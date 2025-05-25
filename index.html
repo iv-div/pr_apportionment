@@ -36,26 +36,49 @@
     </div>
     <table class="w-full text-sm mb-4 border-collapse">
       <thead>
-        <tr class="bg-slate-200"><th class="p-2">Party</th><th class="p-2">Votes</th><th class="p-2">Color</th></tr>
+        <tr class="bg-slate-200"><th class="p-2">Party</th><th class="p-2">Votes</th><th class="p-2">Color</th><th class="p-2">Action</th></tr>
       </thead>
       <tbody id="partyTable"></tbody>
     </table>
-    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-2">Generate</button>
+    <div class="flex gap-4 mb-4">
+      <button type="button" id="addParty" class="bg-green-600 hover:bg-green-700 text-white font-semibold rounded px-4 py-2">Add Party</button>
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-2">Generate</button>
+    </div>
   </form>
 
   <!-- OUTPUT -->
   <div id="results" class="w-full max-w-5xl space-y-12"></div>
 
 <script>
-const defaultColors=['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#66c2a5'];
+const defaultColors=['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#66c2a5','#1f78b4','#33a02c','#e31a1c','#ff7f00','#6a3d9a','#b15928','#a6cee3','#b2df8a','#fb9a99','#fdbf6f'];
 const tbody=document.getElementById('partyTable');
-for(let i=0;i<10;i++){
+
+function addPartyRow(index) {
   const row=document.createElement('tr');
-  row.innerHTML=`<td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${i+1}" /></td>
+  const colorIndex = index % defaultColors.length;
+  row.innerHTML=`<td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${index+1}" /></td>
                  <td class="border p-1"><input type="number" class="w-full border rounded p-1" min="0" value="0" /></td>
-                 <td class="border p-1"><input type="color" value="${defaultColors[i]}" /></td>`;
+                 <td class="border p-1"><input type="color" value="${defaultColors[colorIndex]}" /></td>
+                 <td class="border p-1"><button type="button" class="remove-party bg-red-500 hover:bg-red-600 text-white rounded px-2 py-1 text-xs">Remove</button></td>`;
   tbody.appendChild(row);
+  
+  // Add remove functionality
+  row.querySelector('.remove-party').addEventListener('click', function() {
+    if (tbody.children.length > 1) { // Keep at least one row
+      row.remove();
+    }
+  });
 }
+
+// Initialize with 10 parties
+for(let i=0;i<10;i++){
+  addPartyRow(i);
+}
+
+// Add party button functionality
+document.getElementById('addParty').addEventListener('click', function() {
+  addPartyRow(tbody.children.length);
+});
 
 // Disable mouse wheel and drag on number inputs
 document.addEventListener('wheel', function(e) {
@@ -178,13 +201,13 @@ function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   const scaleFactor = Math.max(1, Math.sqrt(total / 300));
   const baseOuterR = outerR;
   const totalWidth = (baseOuterR * 2 + 200) * scaleFactor;
-  const totalHeight = (innerR + row * rStep + 140) * scaleFactor; // увеличен отступ сверху
+  const totalHeight = (innerR + row * rStep + 160) * scaleFactor; // еще больше отступа сверху
   const cx = (baseOuterR + 40) * scaleFactor;
   const cy = totalHeight - 80 * scaleFactor;
   
   const svg=[`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
   svg.push(`<rect width="100%" height="100%" fill="white"/>`); // White background
-  svg.push(`<text x="${cx}" y="${50*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  svg.push(`<text x="${cx}" y="${60*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
   
   let idx=0;
   const scaledSeatR = seatR * scaleFactor;
