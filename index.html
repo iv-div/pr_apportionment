@@ -7,6 +7,14 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   svg text{font-family:system-ui,Arial,sans-serif}
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center py-8">
@@ -16,7 +24,7 @@
   <form id="inputForm" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mb-10">
     <div class="grid grid-cols-2 gap-4 mb-4">
       <label class="font-semibold flex flex-col">Total seats
-        <input type="number" id="totalSeats" class="border rounded p-1" min="1" value="450" />
+        <input type="number" id="totalSeats" class="border rounded p-1" min="1" max="3000" value="450" />
       </label>
       <label class="font-semibold flex flex-col">Barrier % (optional)
         <input type="number" id="barrier" class="border rounded p-1" min="0" max="99" placeholder="0" />
@@ -92,7 +100,7 @@ function divisorMethod(votes,seats,divFn){if(seats<=0)throw RangeError('seats po
 
 const dHondtDiv=k=>k; const sainteLagueDiv=k=>2*k-1;
 
-// ---------- SVG builder with transparent padding ----------
+// ---------- SVG builder with dynamic scaling ----------
 function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   const total=counts.reduce((a,b)=>a+b,0);
   const partyObjs=counts.map((c,i)=>({c,color:colors[i],name:names[i]||`P${i+1}`,idx:i})).filter(p=>p.c>0).sort((a,b)=>b.c-a.c);
@@ -108,24 +116,48 @@ function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
       visible.push(i<seatsRow);
     }
     remaining-=seatsRow;row++; }
-  const w=640,h=innerR+row*rStep+90,cx=outerR+30,cy=h-60;
-  const svg=[`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`];
-  svg.push(`<text x="${cx}" y="24" text-anchor="middle" font-size="18" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  
+  // Dynamic scaling based on seats count
+  const scaleFactor = Math.max(1, Math.sqrt(total / 300));
+  const baseOuterR = outerR;
+  const totalWidth = (baseOuterR * 2 + 200) * scaleFactor;
+  const totalHeight = (innerR + row * rStep + 100) * scaleFactor;
+  const cx = (baseOuterR + 40) * scaleFactor;
+  const cy = totalHeight - 80 * scaleFactor;
+  
+  const svg=[`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
+  svg.push(`<text x="${cx}" y="${30*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  
   let idx=0;
-  partyObjs.forEach(p=>{for(let k=0;k<p.c;k++){while(!visible[idx])idx++;const [x,y]=coords[idx++];svg.push(`<circle cx="${x+cx}" cy="${cy-y}" r="${seatR}" fill="${p.color}" stroke="white" stroke-width="0.6"/>`);} });
-  svg.push(`<text x="${cx}" y="${cy+seatR*2+14}" text-anchor="middle" font-size="14" font-family="sans-serif">${total} seats</text>`);
-  const legX=cx+outerR+seatR+30,legY=60;
-  partyObjs.forEach((p,i)=>{const y=legY+i*22;svg.push(`<rect x="${legX}" y="${y-6}" width="12" height="12" fill="${p.color}"/>`);
-    svg.push(`<text x="${legX+18}" y="${y}" alignment-baseline="middle" font-size="12" font-family="sans-serif">${p.name} – ${p.c}</text>`);} );
+  const scaledSeatR = seatR * scaleFactor;
+  partyObjs.forEach(p=>{
+    for(let k=0;k<p.c;k++){
+      while(!visible[idx])idx++;
+      const [x,y]=coords[idx++];
+      svg.push(`<circle cx="${(x+baseOuterR+40)*scaleFactor}" cy="${cy-y*scaleFactor}" r="${scaledSeatR}" fill="${p.color}" stroke="white" stroke-width="${0.6*scaleFactor}"/>`);
+    }
+  });
+  
+  svg.push(`<text x="${cx}" y="${cy+scaledSeatR*2+20*scaleFactor}" text-anchor="middle" font-size="${14*scaleFactor}" font-family="sans-serif">${total} seats</text>`);
+  
+  const legX = cx + baseOuterR * scaleFactor + 50 * scaleFactor;
+  const legY = 80 * scaleFactor;
+  partyObjs.forEach((p,i)=>{
+    const y = legY + i * 25 * scaleFactor;
+    svg.push(`<rect x="${legX}" y="${y-8*scaleFactor}" width="${15*scaleFactor}" height="${15*scaleFactor}" fill="${p.color}"/>`);
+    svg.push(`<text x="${legX+25*scaleFactor}" y="${y}" alignment-baseline="middle" font-size="${14*scaleFactor}" font-family="sans-serif">${p.name} – ${p.c}</text>`);
+  });
+  
   svg.push('</svg>');
-  return svg.join('\n');}
+  return svg.join('\n');
+}
 
 // ---------- main ----------
 const form = document.getElementById('inputForm');
 form.addEventListener('submit',e=>{
   e.preventDefault();
   const totalSeats=parseInt(document.getElementById('totalSeats').value);
-  if(!(totalSeats>0))return alert('Total seats must be positive');
+  if(!(totalSeats>=1&&totalSeats<=3000))return alert('Total seats must be between 1 and 3000');
   const barrier=parseFloat(document.getElementById('barrier').value)||0;
   const names=[...tbody.querySelectorAll('tr')].map(tr=>tr.children[0].querySelector('input').value.trim());
   const votes=[...tbody.querySelectorAll('tr')].map(tr=>Math.max(0,parseInt(tr.children[1].querySelector('input').value)||0));
