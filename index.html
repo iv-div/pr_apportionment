@@ -100,6 +100,38 @@ function divisorMethod(votes,seats,divFn){if(seats<=0)throw RangeError('seats po
 
 const dHondtDiv=k=>k; const sainteLagueDiv=k=>2*k-1;
 
+// ---------- SVG to Image converter ----------
+function svgToImage(svgString, callback) {
+  const img = new Image();
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size to match SVG
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+    const svgEl = svgDoc.documentElement;
+    const width = parseInt(svgEl.getAttribute('width'));
+    const height = parseInt(svgEl.getAttribute('height'));
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Draw SVG to canvas
+    ctx.drawImage(img, 0, 0);
+    
+    // Convert to PNG data URL
+    const dataUrl = canvas.toDataURL('image/png');
+    URL.revokeObjectURL(url);
+    callback(dataUrl);
+  };
+  
+  img.src = url;
+}
+
 // ---------- SVG builder with dynamic scaling ----------
 function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   const total=counts.reduce((a,b)=>a+b,0);
@@ -126,6 +158,7 @@ function buildSVG(title,counts,names,colors,seatR=6,gap=1,innerR=28){
   const cy = totalHeight - 80 * scaleFactor;
   
   const svg=[`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
+  svg.push(`<rect width="100%" height="100%" fill="white"/>`); // White background
   svg.push(`<text x="${cx}" y="${30*scaleFactor}" text-anchor="middle" font-size="${18*scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
   
   let idx=0;
@@ -173,8 +206,41 @@ form.addEventListener('submit',e=>{
     {name:"D'Hondt",   counts:divisorMethod(votesFiltered,totalSeats,dHondtDiv)},
     {name:'Imperiali quota',counts:largestRemainder(votesFiltered,totalSeats,imperialiQuota)}
   ];
-  const res=document.getElementById('results');res.innerHTML='';
-  methods.forEach(m=>{const svg=buildSVG(m.name,m.counts,names,colors);const div=document.createElement('div');div.innerHTML=svg;res.appendChild(div);});
+  const res=document.getElementById('results');res.innerHTML='<p class="text-center text-lg">Generating images...</p>';
+  
+  let processed = 0;
+  const imageContainer = document.createElement('div');
+  imageContainer.className = 'space-y-8';
+  
+  methods.forEach((m, index) => {
+    const svg = buildSVG(m.name, m.counts, names, colors);
+    svgToImage(svg, (dataUrl) => {
+      const imgWrapper = document.createElement('div');
+      imgWrapper.className = 'bg-white rounded-lg shadow-md p-4';
+      
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = `${m.name} Parliament Diagram`;
+      img.className = 'max-w-full h-auto mx-auto';
+      
+      // Add download button
+      const downloadBtn = document.createElement('a');
+      downloadBtn.href = dataUrl;
+      downloadBtn.download = `parliament-${m.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`;
+      downloadBtn.className = 'inline-block mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded px-4 py-2 text-sm';
+      downloadBtn.textContent = 'Download PNG';
+      
+      imgWrapper.appendChild(img);
+      imgWrapper.appendChild(downloadBtn);
+      imageContainer.appendChild(imgWrapper);
+      
+      processed++;
+      if (processed === methods.length) {
+        res.innerHTML = '';
+        res.appendChild(imageContainer);
+      }
+    });
+  });
 });
 </script>
 </body>
