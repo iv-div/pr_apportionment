@@ -1,260 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Interactive Parliament Diagram</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Parliament Seat Distribution</title>
   <style>
-    svg text { font-family: system-ui, Arial, sans-serif }
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
+    /* Styling for overall layout and UI elements */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 1200px;
     }
-    input[type="number"] {
-      -moz-appearance: textfield;
+    input, select, button {
+      margin: 5px;
+      padding: 5px;
+      font-size: 14px;
+    }
+    .party-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+    .party-row input[type="text"], .party-row input[type="number"] {
+      width: 120px;
+    }
+    .remove-btn {
+      background: lightgray;
+      border: none;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+    .collapsible {
+      cursor: pointer;
+      background-color: #f1f1f1;
+      border: none;
+      text-align: left;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
+    .content {
+      display: none;
+      padding: 0 10px;
+    }
+    .green-button {
+      background-color: green;
+      color: white;
+      font-size: 16px;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+    }
+    .svg-container {
+      margin-top: 30px;
+    }
+    svg {
+      margin-bottom: 60px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col items-center py-8">
-  <h1 class="text-3xl font-bold mb-6">Interactive Parliament Diagram</h1>
+<body>
+  <h1>🧩 Seat Distribution Calculator</h1>
 
-  <form id="inputForm" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-4xl mb-10">
-    <div class="grid grid-cols-2 gap-4 mb-4">
-      <label class="font-semibold flex flex-col">Total seats
-        <input type="number" id="totalSeats" class="border rounded p-1" min="1" max="3000" value="450" />
-      </label>
-      <label class="font-semibold flex flex-col">Barrier % (optional)
-        <input type="number" id="barrier" class="border rounded p-1" min="0" max="99" placeholder="0" />
-      </label>
-    </div>
-    <div class="mb-4">
-      <label class="font-semibold flex flex-col">Tie-break rule
-        <select id="tieBreakRuleSelect" class="border rounded p-1">
-          <option value="disputed" selected>Leave as disputed (default)</option>
-          <option value="random">Random (lot)</option>
-          <option value="mostVotes">Party with most votes</option>
-          <option value="leastVotes">Party with least votes</option>
-          <option value="lowestIndex">Party with lowest index</option>
-        </select>
-      </label>
-    </div>
-    <table class="w-full text-sm mb-4 border-collapse">
-      <thead>
-        <tr class="bg-slate-200">
-          <th class="p-2">Party</th>
-          <th class="p-2">Votes</th>
-          <th class="p-2">Color</th>
-          <th class="p-2">Action</th>
-        </tr>
-      </thead>
-      <tbody id="partyTable"></tbody>
-    </table>
-    <div class="flex gap-4 mb-4">
-      <button type="button" id="addParty" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded px-4 py-2">Add Party</button>
-    </div>
-    <div class="mb-4">
-      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold rounded text-lg px-6 py-3">Generate</button>
-    </div>
-  </form>
+  <!-- Input: total number of seats to be distributed -->
+  <label>Total Seats (1–3000):</label>
+  <input type="number" id="total-seats" min="1" max="3000" value="6">
 
-  <div id="results" class="w-full max-w-5xl space-y-12"></div>
+  <!-- Collapsible advanced settings section -->
+  <button class="collapsible">Advanced Settings</button>
+  <div class="content">
+    <!-- Input: electoral barrier as a percentage -->
+    <label>Barrier %:</label>
+    <input type="number" id="barrier" value="0" min="0" max="100" step="0.1"><br>
 
-<script>
-const defaultColors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
-const tbody = document.getElementById('partyTable');
+    <!-- Select: tie-breaking strategy for seat conflicts -->
+    <label>Tie-break rule:</label>
+    <select id="tie-break">
+      <option value="disputed" selected>Disputed</option>
+      <option value="random">Random</option>
+      <option value="most">Most votes</option>
+      <option value="least">Least votes</option>
+      <option value="index">Lowest index</option>
+    </select><br>
 
-function addPartyRow(index) {
-  const row = document.createElement('tr');
-  const colorIndex = index % defaultColors.length;
-  row.innerHTML = `<td class="border p-1"><input class="w-full border rounded p-1" placeholder="P${index + 1}" /></td>
-                   <td class="border p-1"><input type="number" class="w-full border rounded p-1" min="0" value="0" /></td>
-                   <td class="border p-1"><input type="color" value="${defaultColors[colorIndex]}" /></td>
-                   <td class="border p-1"><button type="button" class="remove-party text-gray-500 hover:text-gray-700 text-xl font-bold leading-none">&times;</button></td>`;
-  tbody.appendChild(row);
-  row.querySelector('.remove-party').addEventListener('click', function () {
-    if (tbody.children.length > 1) row.remove();
-  });
-}
+    <!-- Select: over-allocation resolution strategy -->
+    <label>Over-allocation rule:</label>
+    <select id="over-alloc">
+      <option value="increase" selected>Increase seat count</option>
+      <option value="adjust-quota">Adjust quota</option>
+      <option value="remove-large">Remove from large parties</option>
+      <option value="remove-small">Remove from small parties</option>
+    </select>
+  </div>
 
-for (let i = 0; i < 5; i++) addPartyRow(i);
-document.getElementById('addParty').addEventListener('click', () => addPartyRow(tbody.children.length));
+  <h2>Parties</h2>
+  <!-- Party rows container: dynamic list of parties -->
+  <div id="party-list"></div>
 
-const tieBreakStrategies = {
-  random: (tied, votes) => tied[Math.floor(Math.random() * tied.length)],
-  mostVotes: (tied, votes) => tied.reduce((best, i) => votes[i] > votes[best] ? i : best, tied[0]),
-  leastVotes: (tied, votes) => tied.reduce((best, i) => votes[i] < votes[best] ? i : best, tied[0]),
-  lowestIndex: (tied) => Math.min(...tied),
-  disputed: (tied, votes, disputeList, seatIndex) => {
-    disputeList.push({ seatIndex, tiedBetween: tied });
-    return 'DISPUTED';
-  }
-};
+  <!-- Controls to manage parties -->
+  <button onclick="addParty()">➕ Add Party</button>
+  <button onclick="fillExample()">📄 Example</button>
 
-const hareQuota = (V, S) => V / S;
-const droopQuota = (V, S) => Math.floor(V / (S + 1)) + 1;
-const imperialiQuota = (V, S) => V / (S + 2);
-const dHondtDiv = k => k;
-const sainteLagueDiv = k => 2 * k - 1;
+  <!-- Main trigger to calculate and render -->
+  <br><br>
+  <button class="green-button" onclick="generateAll()">Generate</button>
 
-function largestRemainder(votes, seats, quotaFn, tieBreakRule) {
-  const totalVotes = votes.reduce((a, b) => a + b, 0);
-  const quota = quotaFn(totalVotes, seats);
-  const seatCounts = votes.map(v => Math.floor(v / quota));
-  let allocated = seatCounts.reduce((a, b) => a + b, 0);
-  const remainders = votes.map((v, i) => v - seatCounts[i] * quota);
-  const result = [...seatCounts];
-  const disputeList = [];
+  <!-- Area where visualizations are rendered -->
+  <div id="visualizations" class="svg-container"></div>
 
-  while (allocated < seats) {
-    let maxRem = Math.max(...remainders);
-    const tied = remainders.map((r, i) => r === maxRem ? i : -1).filter(i => i !== -1);
-    let chosen = tied.length === 1 ? tied[0] : tieBreakStrategies[tieBreakRule](tied, votes, disputeList, allocated);
-    if (chosen === 'DISPUTED') {
-      result.push('DISPUTED');
-    } else {
-      result[chosen]++;
-      remainders[chosen] = -1;
+  <script>
+    /**
+     * Generates a random hex color (for party colors)
+     */
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
     }
-    allocated++;
-  }
-  result.disputedSeats = disputeList;
-  return result;
-}
 
-class MaxHeap {
-  constructor() { this.h = []; }
-  push(o) { this.h.push(o); this.up(this.h.length - 1); }
-  up(i) { while (i) { const p = (i - 1) >> 1; if (this.h[p].val >= this.h[i].val) break; [this.h[p], this.h[i]] = [this.h[i], this.h[p]]; i = p; } }
-  pop() { if (!this.h.length) return null; const top = this.h[0]; const last = this.h.pop(); if (this.h.length) { this.h[0] = last; this.down(0); } return top; }
-  down(i) { for (;;) { let l = i * 2 + 1, r = l + 1, b = i; if (l < this.h.length && this.h[l].val > this.h[b].val) b = l; if (r < this.h.length && this.h[r].val > this.h[b].val) b = r; if (b === i) break; [this.h[b], this.h[i]] = [this.h[i], this.h[b]]; i = b; } }
-}
-
-function divisorMethod(votes, seats, divFn) {
-  const counts = Array(votes.length).fill(0);
-  const heap = new MaxHeap();
-  votes.forEach((v, i) => heap.push({ val: v / divFn(1), idx: i, div: 1 }));
-  for (let s = 0; s < seats; s++) {
-    const top = heap.pop();
-    counts[top.idx]++;
-    const nextDiv = top.div + 1;
-    heap.push({ val: votes[top.idx] / divFn(nextDiv), idx: top.idx, div: nextDiv });
-  }
-  return counts;
-}
-
-function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28) {
-  const total = counts.reduce((a, b) => b !== 'DISPUTED' ? a + b : a, 0);
-  const partyObjs = counts.map((c, i) => ({ c, color: colors[i], name: names[i] || `P${i + 1}`, idx: i }))
-                           .filter(p => p.c > 0).sort((a, b) => b.c - a.c);
-  const coords = [], visible = [];
-  let remaining = total + counts.filter(c => c === 'DISPUTED').length, row = 0, rStep = seatR * 2 + gap, outerR = 0;
-  while (remaining > 0) {
-    const radius = innerR + row * rStep + seatR;
-    outerR = radius;
-    const cap = Math.max(1, Math.floor(Math.PI * radius / (seatR * 2 + gap)));
-    const seatsRow = Math.min(remaining, cap);
-    for (let i = 0; i < cap; i++) {
-      const theta = Math.PI - (i + 0.5) * Math.PI / cap;
-      coords.push([radius * Math.cos(theta), radius * Math.sin(theta)]);
-      visible.push(i < seatsRow);
+    /**
+     * Adds a new party row to the party-list div
+     * Includes inputs for name, votes, color, and delete button
+     */
+    function addParty(name = '', votes = '', color = '') {
+      const container = document.getElementById('party-list');
+      const row = document.createElement('div');
+      row.className = 'party-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Name" value="${name || 'P' + (container.children.length + 1)}" class="party-name">
+        <input type="number" placeholder="Votes" value="${votes}" class="party-votes">
+        <input type="color" value="${color || getRandomColor()}" class="party-color">
+        <button class="remove-btn" onclick="this.parentElement.remove()">✖</button>
+      `;
+      container.appendChild(row);
     }
-    remaining -= seatsRow;
-    row++;
-  }
-  const scaleFactor = Math.max(1, Math.sqrt((total + 1) / 300));
-  const baseOuterR = outerR;
-  const totalWidth = (baseOuterR * 2 + 200) * scaleFactor;
-  const totalHeight = (innerR + row * rStep + 160) * scaleFactor;
-  const cx = (baseOuterR + 40) * scaleFactor;
-  const cy = totalHeight - 80 * scaleFactor;
-  const svg = [`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
-  svg.push(`<rect width="100%" height="100%" fill="white"/>`);
-  svg.push(`<text x="${cx}" y="${40 * scaleFactor}" text-anchor="middle" font-size="${18 * scaleFactor}" font-weight="bold">${title}</text>`);
-  let idx = 0;
-  const scaledSeatR = seatR * scaleFactor;
-  partyObjs.forEach(p => {
-    for (let k = 0; k < p.c; k++) {
-      while (!visible[idx]) idx++;
-      const [x, y] = coords[idx++];
-      svg.push(`<circle cx="${(x + baseOuterR + 40) * scaleFactor}" cy="${cy - y * scaleFactor}" r="${scaledSeatR}" fill="${p.color}" stroke="white" stroke-width="${0.6 * scaleFactor}"/>`);
+
+    /**
+     * Fills the party table with predefined demo data
+     */
+    function fillExample() {
+      document.getElementById('total-seats').value = 6;
+      document.getElementById('party-list').innerHTML = '';
+      addParty('P1', 100000);
+      addParty('P2', 80000);
+      addParty('P3', 30000);
+      addParty('P4', 20000);
+      addParty('P5', '');
     }
-  });
-  counts.forEach(c => {
-    if (c === 'DISPUTED') {
-      while (!visible[idx]) idx++;
-      const [x, y] = coords[idx++];
-      svg.push(`<circle cx="${(x + baseOuterR + 40) * scaleFactor}" cy="${cy - y * scaleFactor}" r="${scaledSeatR}" fill="white" stroke="black" stroke-width="${0.8 * scaleFactor}"/>`);
-    }
-  });
-  svg.push(`<text x="${cx}" y="${cy + scaledSeatR * 2 + 20 * scaleFactor}" text-anchor="middle" font-size="${14 * scaleFactor}">${counts.reduce((a, b) => b !== 'DISPUTED' ? a + b : a, 0) + counts.filter(c => c === 'DISPUTED').length} seats</text>`);
-  const legX = cx + baseOuterR * scaleFactor + 50 * scaleFactor;
-  const legY = 80 * scaleFactor;
-  partyObjs.forEach((p, i) => {
-    const y = legY + i * 25 * scaleFactor;
-    svg.push(`<rect x="${legX}" y="${y - 8 * scaleFactor}" width="${15 * scaleFactor}" height="${15 * scaleFactor}" fill="${p.color}"/>`);
-    svg.push(`<text x="${legX + 25 * scaleFactor}" y="${y}" alignment-baseline="middle" font-size="${14 * scaleFactor}">${p.name} – ${p.c}</text>`);
-  });
-  if (counts.includes('DISPUTED')) {
-    const y = legY + partyObjs.length * 25 * scaleFactor;
-    svg.push(`<rect x="${legX}" y="${y - 8 * scaleFactor}" width="${15 * scaleFactor}" height="${15 * scaleFactor}" fill="white" stroke="black" stroke-width="1"/>`);
-    svg.push(`<text x="${legX + 25 * scaleFactor}" y="${y}" alignment-baseline="middle" font-size="${14 * scaleFactor}">Спорное место</text>`);
-  }
-  svg.push('</svg>');
-  return svg.join('\n');
-}
 
-const form = document.getElementById('inputForm');
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  const totalSeats = parseInt(document.getElementById('totalSeats').value);
-  const barrier = parseFloat(document.getElementById('barrier').value) || 0;
-  const tieBreakRule = document.getElementById('tieBreakRuleSelect').value;
-  const rows = [...tbody.querySelectorAll('tr')];
-  const filtered = rows.map(tr => {
-    const name = tr.children[0].querySelector('input').value.trim();
-    const vote = parseInt(tr.children[1].querySelector('input').value) || 0;
-    const color = tr.children[2].querySelector('input').value;
-    return { name, vote, color };
-  }).filter(p => p.vote > 0);
-  if (filtered.length === 0) return alert('All parties have 0 votes');
-  const names = filtered.map(p => p.name);
-  const votes = filtered.map(p => p.vote);
-  const colors = filtered.map(p => p.color);
-  const totalVotes = votes.reduce((a, b) => a + b, 0);
-  const thresh = totalVotes * barrier / 100;
-  const votesFiltered = votes.map(v => v >= thresh ? v : 0);
-  if (votesFiltered.reduce((a, b) => a + b, 0) === 0) return alert('No party passed barrier');
+    /**
+     * Toggle visibility of the collapsible advanced settings section
+     */
+    document.querySelector(".collapsible").addEventListener("click", function () {
+      this.classList.toggle("active");
+      const content = this.nextElementSibling;
+      content.style.display = content.style.display === "block" ? "none" : "block";
+    });
+  </script>
 
-  const methods = [
-    { name: 'Hare quota', counts: largestRemainder(votesFiltered, totalSeats, hareQuota, tieBreakRule) },
-    { name: 'Droop quota', counts: largestRemainder(votesFiltered, totalSeats, droopQuota, tieBreakRule) },
-    { name: 'Imperiali quota', counts: largestRemainder(votesFiltered, totalSeats, imperialiQuota, tieBreakRule) },
-    { name: "Sainte-Lagu\u00eb", counts: divisorMethod(votesFiltered, totalSeats, sainteLagueDiv) },
-    { name: "D'Hondt", counts: divisorMethod(votesFiltered, totalSeats, dHondtDiv) }
-  ];
-
-  const res = document.getElementById('results');
-  res.innerHTML = '<p class="text-center text-lg">Generating diagrams...</p>';
-
-  let processed = 0;
-  const imageContainer = document.createElement('div');
-  imageContainer.className = 'space-y-8';
-
-  methods.forEach(m => {
-    const svg = buildSVG(m.name, m.counts, names, colors);
-    const div = document.createElement('div');
-    div.className = 'bg-white rounded-lg shadow-md p-4';
-    div.innerHTML = svg;
-    imageContainer.appendChild(div);
-    processed++;
-    if (processed === methods.length) {
-      res.innerHTML = '';
-      res.appendChild(imageContainer);
-    }
-  });
-});
-</script>
+  <!-- Link to all the logic and rendering code -->
+  <script src="mandates.js"></script>
 </body>
 </html>
