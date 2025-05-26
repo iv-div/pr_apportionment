@@ -7,6 +7,7 @@
  * Gathers form data, filters by barrier, and runs all allocation methods.
  */
 function generateAll() {
+  console.log("Generate button clicked");
   const totalSeats = parseInt(document.getElementById('total-seats').value);
   const barrier = parseFloat(document.getElementById('barrier').value);
   const tieBreakRule = document.getElementById('tie-break').value;
