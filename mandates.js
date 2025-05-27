@@ -79,12 +79,19 @@ function quotaMethod(parties, seats, quotaFn, overAllocRule, tieBreakRule) {
       seats = allocated;
     } else if (overAllocRule === 'adjust-quota') {
       let step = 0.000001;
-      while (allocated > seats) {
+      let attempts = 0;
+      let maxAttempts = 100000;
+      while (allocated > seats && attempts < maxAttempts) {
         quota += step;
         base = parties.map(p => Math.floor(p.votes / quota));
         allocated = base.reduce((a, b) => a + b, 0);
         step *= 2;
+        attempts++;
       }
+      if (attempts === maxAttempts) {
+        alert("Quota adjustment failed: max iterations reached.");
+      }
+
     } else {
       const sorted = [...parties].sort((a, b) =>
         overAllocRule === 'remove-large' ? b.votes - a.votes : a.votes - b.votes
@@ -135,16 +142,26 @@ function divisorMethod(parties, seats, divisorFn, tieBreakRule) {
   const allocation = Array(n).fill(0);
   let distributed = 0;
 
-  while (distributed < seats) {
-    const quotients = parties.map((p, i) => ({
-      idx: i,
-      q: p.votes / divisorFn(allocation[i]),
-      votes: p.votes,
-      index: p.index
-    }));
+  let safetyCounter = 0;
+  const maxSteps = 10000;
+
+  while (distributed < seats && safetyCounter < maxSteps) {
+    const quotients = parties.map((p, i) => {
+      const divisor = divisorFn(allocation[i]);
+      // Prevent divide-by-zero or NaN issues
+      const q = divisor > 0 ? p.votes / divisor : 0;
+      return {
+        idx: i,
+        q,
+        votes: p.votes,
+        index: p.index
+      };
+    });
 
     quotients.sort((a, b) => b.q - a.q);
-    const top = quotients.filter(q => q.q === quotients[0].q);
+    const maxQ = quotients[0].q;
+
+    const top = quotients.filter(q => q.q === maxQ);
 
     if (top.length <= seats - distributed) {
       top.forEach(t => {
@@ -156,6 +173,13 @@ function divisorMethod(parties, seats, divisorFn, tieBreakRule) {
       selected.forEach(idx => allocation[idx]++);
       distributed = seats;
     }
+
+    safetyCounter++;
+  }
+
+  if (safetyCounter === maxSteps) {
+    alert("⚠️ Divisor method failed: exceeded maximum steps. Possible infinite loop.");
+    console.warn("Divisor method bailed after", maxSteps, "iterations.");
   }
 
   return allocation;
@@ -166,13 +190,15 @@ function divisorMethod(parties, seats, divisorFn, tieBreakRule) {
  */
 function applyTieBreak(candidates, count, rule, parties) {
   if (rule === 'disputed') {
-    // All disputed go to a pseudo-party
     const names = candidates.map(c => parties[c.idx].name).join(', ');
-    parties.push({ name: `Disputed Mandates (${names})`, votes: 0, color: '#ffffff', index: 9999 });
-    const idx = parties.length - 1;
+    const label = `Disputed Mandates (${names})`;
+    const existing = parties.find(p => p.name === label);
+    if (!existing) {
+      parties.push({ name: label, votes: 0, color: '#ffffff', index: 9999 });
+    }
+    const idx = parties.findIndex(p => p.name === label);
     return Array(count).fill(idx);
   }
-
   const sorters = {
     random: () => shuffle([...candidates]),
     most: () => [...candidates].sort((a, b) => b.votes - a.votes),
