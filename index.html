@@ -4,166 +4,177 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Parliament Seat Distribution</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Styling for overall layout and UI elements */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      max-width: 1200px;
+    /* For Tailwind, most styles will be utility classes. Add minimal global styles if needed. */
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
-    input, select, button {
-      margin: 5px;
-      padding: 5px;
-      font-size: 14px;
+    input[type="number"] {
+      -moz-appearance: textfield; /* Firefox */
     }
-    .party-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 5px;
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      /* For border to appear only when open, manage via JS or more complex CSS if needed */
     }
-    .party-row input[type="text"], .party-row input[type="number"] {
-      width: 120px;
-    }
-    .remove-btn {
-      background: lightgray;
-      border: none;
-      padding: 2px 6px;
-      cursor: pointer;
-    }
-    .collapsible {
-      cursor: pointer;
-      background-color: #f1f1f1;
-      border: none;
-      text-align: left;
-      padding: 10px;
-      width: 100%;
-      font-size: 16px;
-    }
-    .content {
-      display: none;
-      padding: 0 10px;
-    }
-    .green-button {
-      background-color: green;
-      color: white;
-      font-size: 16px;
-      padding: 10px 20px;
-      border: none;
-      cursor: pointer;
-    }
-    .svg-container {
-      margin-top: 30px;
-    }
-    svg {
-      margin-bottom: 60px;
-      border: 1px solid #ccc;
+    .collapsible-content.open {
+        border-width: 1px; /* Add border when open */
     }
   </style>
 </head>
-<body>
-  <h1>🧩 Seat Distribution Calculator</h1>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center py-8 px-4">
+  <h1 class="text-3xl font-bold mb-8 text-slate-700">🧩 Seat Distribution Calculator</h1>
 
-  <!-- Input: total number of seats to be distributed -->
-  <label>Total Seats (1–3000):</label>
-  <input type="number" id="total-seats" min="1" max="3000" value="6">
+  <!-- INPUT FORM -->
+  <form id="inputForm" class="bg-white shadow-xl rounded-xl p-6 sm:p-8 w-full max-w-4xl mb-10">
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+      <label class="font-semibold text-slate-700 flex flex-col">Total Seats (1–3000)
+        <input type="number" id="total-seats" class="border border-slate-300 rounded p-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" max="3000" value="6" />
+      </label>
+    </div>
 
-  <!-- Collapsible advanced settings section -->
-  <button class="collapsible">Advanced Settings</button>
-  <div class="content">
-    <!-- Input: electoral barrier as a percentage -->
-    <label>Barrier %:</label>
-    <input type="number" id="barrier" value="0" min="0" max="100" step="0.1"><br>
+    <!-- Collapsible advanced settings section -->
+    <div class="mb-6">
+      <button type="button" id="collapsible-toggle" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-md text-left flex justify-between items-center transition-colors">
+        Advanced Settings
+        <svg id="collapsible-arrow" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div id="collapsible-content" class="collapsible-content bg-slate-50 p-4 mt-0 rounded-b-md border-slate-200"> {/* mt-0 and rounded-b-md */}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <label class="font-semibold text-slate-700 flex flex-col">Barrier %
+              <input type="number" id="barrier" class="border border-slate-300 rounded p-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="0" min="0" max="100" step="0.1" placeholder="0"/>
+            </label>
+            <label class="font-semibold text-slate-700 flex flex-col">Tie-break rule
+              <select id="tie-break" class="border border-slate-300 rounded p-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="disputed" selected>Disputed</option>
+                <option value="random">Random</option>
+                <option value="most">Most votes</option>
+                <option value="least">Least votes</option>
+                <option value="index">Lowest index</option>
+              </select>
+            </label>
+            <label class="font-semibold text-slate-700 flex flex-col">Over-allocation rule
+              <select id="over-alloc" class="border border-slate-300 rounded p-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="increase" selected>Increase seat count</option>
+                <option value="adjust-quota">Adjust quota</option>
+                <option value="remove-large">Remove from large parties</option>
+                <option value="remove-small">Remove from small parties</option>
+              </select>
+            </label>
+        </div>
+      </div>
+    </div>
 
-    <!-- Select: tie-breaking strategy for seat conflicts -->
-    <label>Tie-break rule:</label>
-    <select id="tie-break">
-      <option value="disputed" selected>Disputed</option>
-      <option value="random">Random</option>
-      <option value="most">Most votes</option>
-      <option value="least">Least votes</option>
-      <option value="index">Lowest index</option>
-    </select><br>
+    <h2 class="text-xl font-semibold mb-3 text-slate-700">Parties</h2>
+    <div class="overflow-x-auto mb-4 rounded-md border border-slate-200">
+      <table class="w-full text-sm border-collapse">
+        <thead class="bg-slate-200">
+          <tr>
+            <th class="p-2 text-left text-slate-600 font-semibold">Name</th>
+            <th class="p-2 text-left text-slate-600 font-semibold">Votes</th>
+            <th class="p-2 text-left text-slate-600 font-semibold">Color</th>
+            <th class="p-2 text-center text-slate-600 font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody id="party-list">
+          <!-- Party rows will be added here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
 
-    <!-- Select: over-allocation resolution strategy -->
-    <label>Over-allocation rule:</label>
-    <select id="over-alloc">
-      <option value="increase" selected>Increase seat count</option>
-      <option value="adjust-quota">Adjust quota</option>
-      <option value="remove-large">Remove from large parties</option>
-      <option value="remove-small">Remove from small parties</option>
-    </select>
+    <div class="flex flex-wrap gap-4 mb-6">
+      <button type="button" id="addPartyBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md px-4 py-2 transition-colors">➕ Add Party</button>
+      <button type="button" id="fillExampleBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-md px-4 py-2 transition-colors">📄 Example</button>
+    </div>
+
+    <button type="submit" id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md px-4 py-3 text-lg transition-colors">Generate Diagrams</button>
+  </form>
+
+  <!-- OUTPUT -->
+  <div id="results" class="w-full max-w-5xl space-y-12">
+    <!-- SVG/PNG results will be appended here -->
   </div>
 
-  <h2>Parties</h2>
-  <!-- Party rows container: dynamic list of parties -->
-  <div id="party-list"></div>
-
-  <!-- Controls to manage parties -->
-  <button onclick="addParty()">➕ Add Party</button>
-  <button onclick="fillExample()">📄 Example</button>
-
-  <!-- Main trigger to calculate and render -->
-  <br><br>
-  <button class="green-button" onclick="generateAll()">Generate</button>
-
-  <!-- Area where visualizations are rendered -->
-  <div id="visualizations" class="svg-container"></div>
-
   <script>
-    /**
-     * Generates a random hex color (for party colors)
-     */
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
-    }
+    const defaultColors=['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#66c2a5','#1f78b4','#33a02c','#e31a1c','#ff7f00','#6a3d9a','#b15928','#a6cee3','#b2df8a','#fb9a99','#fdbf6f'];
+    const partyListTbody = document.getElementById('party-list');
+    const inputForm = document.getElementById('inputForm');
 
-    /**
-     * Adds a new party row to the party-list div
-     * Includes inputs for name, votes, color, and delete button
-     */
     function addParty(name = '', votes = '', color = '') {
-      const container = document.getElementById('party-list');
-      const row = document.createElement('div');
-      row.className = 'party-row';
+      const rowIndex = partyListTbody.children.length;
+      const partyName = name || `P${rowIndex + 1}`;
+      const partyColor = color || defaultColors[rowIndex % defaultColors.length];
+      
+      const row = document.createElement('tr');
+      row.className = 'party-row border-b border-slate-200 last:border-b-0 even:bg-slate-50 hover:bg-slate-100 transition-colors';
       row.innerHTML = `
-        <input type="text" placeholder="Name" value="${name || 'P' + (container.children.length + 1)}" class="party-name">
-        <input type="number" placeholder="Votes" value="${votes}" class="party-votes">
-        <input type="color" value="${color || getRandomColor()}" class="party-color">
-        <button class="remove-btn" onclick="this.parentElement.remove()">✖</button>
+        <td class="p-2"><input type="text" placeholder="Name" value="${partyName}" class="party-name w-full border border-slate-300 rounded p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"></td>
+        <td class="p-2"><input type="number" placeholder="Votes" value="${votes}" class="party-votes w-full border border-slate-300 rounded p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" min="0"></td>
+        <td class="p-2"><input type="color" value="${partyColor}" class="party-color w-full h-8 p-0 border-none rounded cursor-pointer"></td>
+        <td class="p-2 text-center"><button type="button" class="remove-btn bg-red-500 hover:bg-red-600 text-white font-bold rounded px-3 py-1 text-xs transition-colors">✖</button></td>
       `;
-      container.appendChild(row);
+      partyListTbody.appendChild(row);
+
+      row.querySelector('.remove-btn').addEventListener('click', function() {
+           row.remove();
+      });
     }
 
-    /**
-     * Fills the party table with predefined demo data
-     */
     function fillExample() {
       document.getElementById('total-seats').value = 6;
-      document.getElementById('party-list').innerHTML = '';
+      partyListTbody.innerHTML = ''; // Clear existing parties
       addParty('P1', 100000);
       addParty('P2', 80000);
       addParty('P3', 30000);
       addParty('P4', 20000);
-      addParty('P5', '');
+      addParty('P5', ''); 
+      // Reset advanced settings to default for example
+      document.getElementById('barrier').value = "0";
+      document.getElementById('tie-break').value = "disputed";
+      document.getElementById('over-alloc').value = "increase";
     }
+    
+    // Initialize with a few parties
+    for (let i = 0; i < 4; i++) { // Start with 4 example rows
+      addParty();
+    }
+    // fillExample(); // Uncomment to start with the full example by default
 
-    /**
-     * Toggle visibility of the collapsible advanced settings section
-     */
-    document.querySelector(".collapsible").addEventListener("click", function () {
-      this.classList.toggle("active");
-      const content = this.nextElementSibling;
-      content.style.display = content.style.display === "block" ? "none" : "block";
+    document.getElementById('addPartyBtn').addEventListener('click', () => addParty());
+    document.getElementById('fillExampleBtn').addEventListener('click', fillExample);
+
+    // Collapsible logic
+    const collapsibleToggle = document.getElementById('collapsible-toggle');
+    const collapsibleContent = document.getElementById('collapsible-content');
+    const collapsibleArrow = document.getElementById('collapsible-arrow');
+
+    collapsibleToggle.addEventListener('click', function () {
+      const isOpen = collapsibleContent.style.maxHeight && collapsibleContent.style.maxHeight !== "0px";
+      if (isOpen) {
+        collapsibleContent.style.maxHeight = "0px";
+        collapsibleArrow.classList.remove('rotate-180');
+        collapsibleContent.classList.remove('open'); // For border
+      } else {
+        collapsibleContent.style.maxHeight = collapsibleContent.scrollHeight + "px";
+        collapsibleArrow.classList.add('rotate-180');
+        collapsibleContent.classList.add('open'); // For border
+      }
     });
+
+    // Disable mouse wheel on number inputs when focused
+    document.addEventListener('wheel', function(e) {
+      if (e.target.type === 'number' && document.activeElement === e.target) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   </script>
 
-  <!-- Link to all the logic and rendering code -->
   <script src="svg-utils.js"></script>
   <script src="mandates.js"></script>
   
