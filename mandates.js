@@ -129,8 +129,13 @@ function quotaMethod(parties, seats, quotaFn, overAllocRule, tieBreakRule) {
     if (tied.length <= remaining) {
       for (let i = 0; i < remaining; i++) base[remainders[i].idx]++;
     } else {
-      const selected = applyTieBreak(tied, remaining, tieBreakRule, parties);
-      selected.forEach(idx => base[idx]++);
+    const selected = applyTieBreak(tied, remaining, tieBreakRule, parties);
+    selected.forEach(idx => {
+      if (typeof base[idx] !== 'number' || isNaN(base[idx])) { // Check if it's not a number or is NaN
+        base[idx] = 0; // Initialize to 0 if it's a new slot or was NaN
+      }
+      base[idx]++;
+    });
     }
   }
 
@@ -173,9 +178,14 @@ function divisorMethod(parties, seats, divisorFn, tieBreakRule) {
         distributed++;
       });
     } else {
-      const selected = applyTieBreak(top, seats - distributed, tieBreakRule, parties);
-      selected.forEach(idx => allocation[idx]++);
-      distributed = seats;
+    const selected = applyTieBreak(top, seats - distributed, tieBreakRule, parties);
+    selected.forEach(idx => {
+      if (typeof allocation[idx] !== 'number' || isNaN(allocation[idx])) { // Check if it's not a number or is NaN
+        allocation[idx] = 0; // Initialize to 0 if it's a new slot or was NaN
+      }
+      allocation[idx]++;
+    });
+    distributed = seats;
     }
 
     safetyCounter++;
