@@ -161,6 +161,7 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
 
   let currentSeatVisualIndex = 0;
   const scaledSeatR = Math.max(1, seatR * scaleFactor); // Ensure seat radius is at least 1
+  let allSeatsDrawn = false; 
 
   partyObjs.forEach(p => {
     if (allSeatsDrawn) return;
