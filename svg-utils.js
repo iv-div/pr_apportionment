@@ -163,12 +163,19 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
   const scaledSeatR = Math.max(1, seatR * scaleFactor); // Ensure seat radius is at least 1
 
   partyObjs.forEach(p => {
+    if (allSeatsDrawn) return;
     for (let k = 0; k < p.c; k++) {
-      if (currentSeatVisualIndex >= coords.length) break; 
+      if (currentSeatVisualIndex >= coords.length) {
+        allSeatsDrawn = true;
+        break;
+        }
       while (currentSeatVisualIndex < visible.length && !visible[currentSeatVisualIndex]) {
         currentSeatVisualIndex++;
       }
-      if (currentSeatVisualIndex >= coords.length || currentSeatVisualIndex >= visible.length) break;
+      if (currentSeatVisualIndex >= coords.length || currentSeatVisualIndex >= visible.length) {
+        allSeatsDrawn = true;
+        break;
+      }
 
       const [x, y] = coords[currentSeatVisualIndex++];
       const isDisputed = p.name.toLowerCase().includes("disputed mandates");
@@ -183,7 +190,6 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
                         stroke="${strokeColor}" 
                         stroke-width="${Math.max(0.1, strokeWidth)}"/>`); // Ensure stroke width is positive
     }
-    if (currentSeatVisualIndex >= coords.length) break;
   });
 
   svg.push(`<text x="${diagramCenterX}" y="${diagramCenterY + scaledSeatR + 20 * scaleFactor}" text-anchor="middle" font-size="${Math.max(8, 14 * scaleFactor)}" font-family="sans-serif">${total} seats</text>`);
