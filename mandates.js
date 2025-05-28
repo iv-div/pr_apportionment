@@ -8,6 +8,7 @@
  */
 function generateAll() {
   console.log("Generate button clicked");
+
   const totalSeats = parseInt(document.getElementById('total-seats').value);
   const barrier = parseFloat(document.getElementById('barrier').value);
   const tieBreakRule = document.getElementById('tie-break').value;
@@ -30,7 +31,6 @@ function generateAll() {
     return;
   }
 
-  // Filter parties by election barrier
   const totalVotes = parties.reduce((sum, p) => sum + p.votes, 0);
   const barrierVotes = totalVotes * barrier / 100;
   const filtered = parties.filter(p => p.votes >= barrierVotes);
@@ -41,26 +41,30 @@ function generateAll() {
   }
 
   const container = document.getElementById('visualizations');
-  container.innerHTML = ''; // clear previous
+  container.innerHTML = ''; // Clear old results
 
-  // Allocation and visualization per method
-  const methods = [
+  const quotaMethods = [
     { name: "Hare Quota", quotaFn: (tv, s) => tv / s },
     { name: "Droop Quota", quotaFn: (tv, s) => Math.floor(tv / (s + 1)) + 1 },
     { name: "Imperiali Quota", quotaFn: (tv, s) => tv / (s + 2) },
   ];
 
-  methods.forEach(method => {
-    const result = quotaMethod(filtered, totalSeats, method.quotaFn, overAlloc, tieBreakRule);
-    buildSVG(method.name, result, filtered.map(p => p.name), filtered.map(p => p.color));
+  quotaMethods.forEach(method => {
+    const clonedParties = JSON.parse(JSON.stringify(filtered));
+    const result = quotaMethod(clonedParties, totalSeats, method.quotaFn, overAlloc, tieBreakRule);
+    buildSVG(method.name, result, clonedParties.map(p => p.name), clonedParties.map(p => p.color));
   });
 
-  // Divisor methods
-  const dHondt = divisorMethod(filtered, totalSeats, i => i + 1, tieBreakRule);
-  buildSVG("D’Hondt", dHondt, filtered.map(p => p.name), filtered.map(p => p.color));
+  const divisorMethods = [
+    { name: "D’Hondt", divisorFn: i => i + 1 },
+    { name: "Sainte-Laguë", divisorFn: i => 2 * i + 1 }
+  ];
 
-  const sLague = divisorMethod(filtered, totalSeats, i => 2 * i + 1, tieBreakRule);
-  buildSVG("Sainte-Laguë", sLague, filtered.map(p => p.name), filtered.map(p => p.color));
+  divisorMethods.forEach(method => {
+    const clonedParties = JSON.parse(JSON.stringify(filtered));
+    const result = divisorMethod(clonedParties, totalSeats, method.divisorFn, tieBreakRule);
+    buildSVG(method.name, result, clonedParties.map(p => p.name), clonedParties.map(p => p.color));
+  });
 }
 
 /**
@@ -192,13 +196,22 @@ function applyTieBreak(candidates, count, rule, parties) {
   if (rule === 'disputed') {
     const names = candidates.map(c => parties[c.idx].name).join(', ');
     const label = `Disputed Mandates (${names})`;
-    const existing = parties.find(p => p.name === label);
+
+    let existing = parties.find(p => p.name === label);
     if (!existing) {
-      parties.push({ name: label, votes: 0, color: '#ffffff', index: 9999 });
+      parties.push({
+        name: label,
+        votes: 0,
+        color: '#ffffff',
+        index: 9999
+      });
+      existing = parties[parties.length - 1];
     }
-    const idx = parties.findIndex(p => p.name === label);
+
+    const idx = parties.indexOf(existing);
     return Array(count).fill(idx);
   }
+
   const sorters = {
     random: () => shuffle([...candidates]),
     most: () => [...candidates].sort((a, b) => b.votes - a.votes),
@@ -206,7 +219,9 @@ function applyTieBreak(candidates, count, rule, parties) {
     index: () => [...candidates].sort((a, b) => a.index - b.index)
   };
 
-  return (sorters[rule] ? sorters[rule]() : candidates).slice(0, count).map(c => c.idx);
+  return (sorters[rule] ? sorters[rule]() : candidates)
+    .slice(0, count)
+    .map(c => c.idx);
 }
 
 /**
