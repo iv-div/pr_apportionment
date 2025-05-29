@@ -113,8 +113,12 @@ function generateAll() {
           seatCounts = quotaMethod(clonedPartiesForMethod, totalSeats, method.quotaFn, overAllocRule, tieBreakRule);
         } else {
           console.log(`Calling ${method.name} with totalSeats: ${totalSeats}`);
-          console.log(`${method.name} calculated seatCounts:`, seatCounts, `Sum:`, seatCounts.reduce((a,b) => a+b, 0));
           seatCounts = divisorMethod(clonedPartiesForMethod, totalSeats, method.divisorFn, tieBreakRule);
+          if (seatCounts && Array.isArray(seatCounts)) {
+            console.log(`${method.name} calculated seatCounts:`, seatCounts, `Sum:`, seatCounts.reduce((a, b) => (a || 0) + (b || 0), 0));
+          } else {
+            console.log(`${method.name} calculated seatCounts:`, seatCounts, `(Sum not calculable or seatCounts is not an array)`);
+          }
         }
       } catch (calcError) {
           console.error(`Error calculating seats for ${method.name}:`, calcError);
