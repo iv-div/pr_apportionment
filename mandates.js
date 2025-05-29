@@ -89,8 +89,9 @@ function generateAll() {
       { name: "Hare Quota", type: "quota", quotaFn: (tv, s) => tv / s },
       { name: "Droop Quota", type: "quota", quotaFn: (tv, s) => Math.floor(tv / (s + 1)) + 1 },
       { name: "Imperiali Quota", type: "quota", quotaFn: (tv, s) => tv / (s + 2) },
-      { name: "D’Hondt", type: "divisor", divisorFn: i => i + 1 },
-      { name: "Sainte-Laguë", type: "divisor", divisorFn: i => 2 * i + 1 }
+      { name: "D'Hondt", type: "divisor", divisorFn: allocatedSeats => allocatedSeats + 1 },           // ✅ ПРАВИЛЬНО
+      { name: "Sainte-Laguë", type: "divisor", divisorFn: allocatedSeats => (2 * allocatedSeats) + 1 } // ✅ ПРАВИЛЬНО
+
     ];
 
     let processedCount = 0;
@@ -108,8 +109,11 @@ function generateAll() {
       let seatCounts;
       try {
         if (method.type === "quota") {
+          console.log(`Calling ${method.name} with totalSeats: ${totalSeats}`);
           seatCounts = quotaMethod(clonedPartiesForMethod, totalSeats, method.quotaFn, overAllocRule, tieBreakRule);
-        } else { 
+        } else {
+          console.log(`Calling ${method.name} with totalSeats: ${totalSeats}`);
+          console.log(`${method.name} calculated seatCounts:`, seatCounts, `Sum:`, seatCounts.reduce((a,b) => a+b, 0));
           seatCounts = divisorMethod(clonedPartiesForMethod, totalSeats, method.divisorFn, tieBreakRule);
         }
       } catch (calcError) {
@@ -438,6 +442,9 @@ function quotaMethod(parties, totalSeatsToAllocate, quotaFn, overAllocRule, tieB
 
 
 function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
+  console.log(`DivisorMethod START - Target seats: ${seatsToAllocate}, Parties count: ${parties.length}`);
+  let allocatedThisRun = 0; // Счетчик фактически выделенных мест
+  
   if (!parties || parties.length === 0) return [];
   const numParties = parties.length;
   let currentAllocation = Array(numParties).fill(0);
@@ -459,13 +466,13 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
     votes: (p.votes || 0),
     index: (p.index === undefined ? i : p.index),
     currentSeatsInternal: 0, // Seats for this party in this method's context
-    quotient: (p.votes || 0) / divisorFn(1) 
+    quotient: (p.votes || 0) / divisorFn(0) 
   })).filter(pq => pq.votes > 0 && isFinite(pq.quotient) && !isNaN(pq.quotient) && pq.quotient > 0);
 
 
   for (let s = 0; s < seatsToAllocate; s++) {
     if (partyQuotients.length === 0) {
-        console.warn("Divisor method: No eligible parties left for quotient calculation.");
+        console.warn(`Divisor method (${divisorFn.toString()}): No eligible parties left at iteration ${s}. Target: ${seatsToAllocate}`);
         break;
     }
 
@@ -476,7 +483,7 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
     });
     
     if (partyQuotients[0].quotient <= 0 && s > 0) { // No positive quotients left
-        console.warn("Divisor method: All remaining quotients are zero or negative.");
+        console.warn(`Divisor method (${divisorFn.toString()}): All remaining quotients are zero or negative at iteration ${s}. Target: ${seatsToAllocate}`);
         break;
     }
     
@@ -492,7 +499,7 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
     }
 
     if (!winners || winners.length === 0) {
-        console.warn("Divisor method tie-break returned no winners. Breaking allocation.");
+        console.warn(`Divisor method (${divisorFn.toString()}): Tie-break returned no winners at iteration ${s}. Target: ${seatsToAllocate}`);
         break;
     }
     
@@ -502,11 +509,13 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
         currentAllocation[winnerIdx] = 0;
     }
     currentAllocation[winnerIdx]++;
+    allocatedThisRun++; // Увеличиваем счетчик
+
     
     const partyThatWon = partyQuotients.find(pq => pq.idx === winnerIdx);
     if (partyThatWon) {
         partyThatWon.currentSeatsInternal++;
-        partyThatWon.quotient = partyThatWon.votes / divisorFn(partyThatWon.currentSeatsInternal + 1);
+        partyThatWon.quotient = partyThatWon.votes / divisorFn(partyThatWon.currentSeatsInternal);
         if (!isFinite(partyThatWon.quotient) || isNaN(partyThatWon.quotient) || partyThatWon.quotient <=0) {
             // Effectively remove party from consideration if its next quotient is invalid/zero
             partyQuotients = partyQuotients.filter(pq => pq.idx !== winnerIdx);
@@ -517,5 +526,6 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
     }
   }
   ensureAllocationLength();
+  console.log(`DivisorMethod END - Target: ${seatsToAllocate}, Actually allocated: ${allocatedThisRun}, Result:`, currentAllocation);
   return currentAllocation;
 }
