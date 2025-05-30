@@ -123,7 +123,11 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
     safetyRowCount++;
   }
 
-  const circleScaleFactor = Math.max(0.2, Math.min(1, 300 / total)); // key line
+  //const circleScaleFactor = Math.max(0.4, Math.min(1, 500 / total)); // key line
+  const circleScaleFactor = total <= 300
+    ? 1
+    : Math.max(0.3, 1 - 0.0008 * (total - 300));
+
   const textScaleFactor = 1;
 
   const baseOuterR = outerRCalculated > 0 ? outerRCalculated : innerR + seatR;
