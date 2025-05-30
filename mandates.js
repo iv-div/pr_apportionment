@@ -507,7 +507,7 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
         break;
     }
     
-    const winnerIdx = winners[0];
+    const winnerIdx = winners[0]; 
     
     if (currentAllocation[winnerIdx] === undefined || isNaN(currentAllocation[winnerIdx])) {
         currentAllocation[winnerIdx] = 0;
@@ -524,9 +524,13 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
             // Effectively remove party from consideration if its next quotient is invalid/zero
             partyQuotients = partyQuotients.filter(pq => pq.idx !== winnerIdx);
         }
-    } else { // Should not happen if winnerIdx is valid
-        console.error("Divisor method: Party that won could not be found in partyQuotients list.");
-        break;
+    } else {
+        if (!parties[winnerIdx]) {
+             console.error(`Divisor method: Critical error. winnerIdx ${winnerIdx} is out of bounds for 'parties' array even after tie-break. This should not happen.`);
+             break; // Break only on a truly unexpected condition
+        }
+        // If parties[winnerIdx] exists, it's likely the disputed party.
+        console.log(`Divisor method: Party with idx ${winnerIdx} (likely 'Disputed') won a seat. Not in partyQuotients for quotient update.`);
     }
   }
   ensureAllocationLength();
