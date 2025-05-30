@@ -89,8 +89,13 @@ function buildSVG(title, counts, names, colors) {
     layers++;
   }
 
-  const maxRadius = plotAreaHeight;
-  seatR = (maxRadius - minGap * layers) / (2 * layers);
+  const maxHorizontalRadius = plotAreaWidth / 2;
+  const maxVerticalRadius = plotAreaHeight;
+
+  const horizontalLimit = (maxHorizontalRadius - minGap * layers) / (2 * layers);
+  const verticalLimit = (maxVerticalRadius - minGap * layers) / (2 * layers);
+
+  seatR = Math.min(horizontalLimit, verticalLimit);
 
   const coords = [], visible = [];
   let totalPlaced = 0;
