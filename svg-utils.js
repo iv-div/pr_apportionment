@@ -46,11 +46,11 @@ function svgToImage(svgString, callback) {
 }
 
 function buildSVG(title, counts, names, colors) {
-  const fontTitleSize = 24;
-  const fontLegendSize = 16;
-  const fontSeatsLabelSize = 16;
+  const fontTitleSize = 42;
+  const fontLegendSize = 36;
+  const fontSeatsLabelSize = 36;
 
-  const maxSeatRadius = 60;
+  const maxSeatRadius = 30;
 
   const canvasWidth = 1000;
   const canvasHeight = 600;
