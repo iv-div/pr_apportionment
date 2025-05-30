@@ -135,7 +135,7 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
 
   const circleScaleFactor = Math.max(0.2, Math.min(1, 300 / total));
   const textScaleFactor = 1; 
-  const scaleFactor = Math.max(1, Math.sqrt(total / 200)); 
+  const scaleFactor = Math.max(0.2, Math.min(1, 300 / total));
   const baseOuterR = outerRCalculated > 0 ? outerRCalculated : innerR + seatR; // Ensure baseOuterR is positive 
   
   const legendEntryHeight = 20 * scaleFactor;
