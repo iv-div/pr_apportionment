@@ -54,9 +54,9 @@ function buildSVG(title, counts, names, colors) {
     return [first, second];
   }
 
-  const fontTitleSize = 42;
-  const fontLegendSize = 36;
-  const fontSeatsLabelSize = 36;
+  const fontTitleSize = 36;
+  const fontLegendSize = 24;
+  const fontSeatsLabelSize = 24;
 
   const maxSeatRadius = 28;
 
@@ -155,7 +155,7 @@ function buildSVG(title, counts, names, colors) {
       svg.push(`<text x="${legX + 20}" y="${legY + 4 + i * 14}" font-size="${fontLegendSize}" font-family="sans-serif">${line}</text>`);
     });
     svg.push(`<rect x="${legX}" y="${legY - 7}" width="14" height="14" fill="${p.color}" stroke="black" stroke-width="0.3"/>`);
-    legY += lines.length * 16; // увеличиваем отступ в зависимости от числа строк
+    legY += lines.length * 16+4; // увеличиваем отступ в зависимости от числа строк
   });
   
   svg.push(`</svg>`);
