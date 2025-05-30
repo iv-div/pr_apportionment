@@ -383,66 +383,71 @@ function quotaMethod(parties, totalSeatsToAllocate, quotaFn, overAllocRule, tieB
   }
   ensureBaseSeatsLength(); // Re-ensure after potential modifications
 
+// mandates.js -> quotaMethod -> часть для распределения remainingSeats
+
   let remainingSeats = currentSeats - allocatedSeatsSum;
   if (remainingSeats > 0) {
-    const remainders = parties.map((p, i) => ({
+    const remainderDetails = parties.map((p, i) => ({
       idx: i, 
       frac: ((p.votes || 0) / quota) - (baseSeats[i] || 0), 
       votes: (p.votes || 0),
-      index: (p.index === undefined ? i : p.index)
-    })).filter(r => r.frac > -1e-9); // Filter out negative or very small fractions (already used or errors)
+      originalIndex: (p.index === undefined ? i : p.index) // Используем originalIndex из parties
+    })).filter(r => r.frac > -1e-9); // Только положительные остатки
 
+    // Группируем партии по уникальным значениям остатков
+    const remainderGroups = {};
+    remainderDetails.forEach(r => {
+      const fracKey = r.frac.toFixed(10); // Ключ для группировки (округляем для стабильности)
+      if (!remainderGroups[fracKey]) {
+        remainderGroups[fracKey] = [];
+      }
+      remainderGroups[fracKey].push(r);
+    });
 
-    for (let k = 0; k < remainingSeats; k++) {
-        if (remainders.length === 0) break;
-        
-        remainders.sort((a, b) => {
-            if (Math.abs(b.frac - a.frac) > 1e-9) return b.frac - a.frac;
+    // Сортируем группы остатков по убыванию
+    const sortedFracKeys = Object.keys(remainderGroups).sort((a, b) => parseFloat(b) - parseFloat(a));
+
+    for (const fracKey of sortedFracKeys) {
+      if (remainingSeats <= 0) break;
+
+      const currentGroup = remainderGroups[fracKey]; // Массив партий с одинаковым остатком
+      const quantity_ufp = currentGroup.length;
+
+      if (remainingSeats >= quantity_ufp) {
+        // Мест достаточно для всех в этой группе
+        console.log(`Quota Remainder: Allocating ${quantity_ufp} seats to parties with frac ${fracKey}`);
+        // Сортируем внутри группы по вторичным правилам (голоса, потом индекс) на случай, если это важно,
+        // хотя ТЗ не уточняет, но это хорошая практика для детерминизма.
+        currentGroup.sort((a,b) => {
             if (b.votes !== a.votes) return b.votes - a.votes;
-            return a.index - b.index;
+            return a.originalIndex - b.originalIndex;
         });
+        for (const partyInfo of currentGroup) {
+          if (remainingSeats <= 0) break; // На всякий случай
+          baseSeats[partyInfo.idx]++;
+          remainingSeats--;
+        }
+      } else {
+        // Мест НЕ достаточно для всех в этой группе, нужен тай-брейк
+        console.log(`Quota Remainder: Tie-break for ${quantity_ufp} parties for ${remainingSeats} seats with frac ${fracKey}. Rule: ${tieBreakRule}`);
+        // `applyTieBreak` ожидает кандидатов в формате {idx, votes, index (originalIndex)}
+        // `currentGroup` уже в этом формате (нужно только убедиться, что `index` это originalIndex)
+        const winnerIndices = applyTieBreak(currentGroup, remainingSeats, tieBreakRule, parties);
+        ensureBaseSeatsLength(); // `parties` могли быть изменены
 
-        if (remainders[0].frac < 1e-9 && k > 0) { // No substantial positive remainders left
-             console.warn("No substantial positive remainders left in quota method.");
-             break;
+        for (const winnerIdx of winnerIndices) {
+            if (baseSeats[winnerIdx] === undefined || isNaN(baseSeats[winnerIdx])) {
+                baseSeats[winnerIdx] = 0;
+            }
+            baseSeats[winnerIdx]++;
         }
-
-        const highestFrac = remainders[0].frac;
-        const tiedForHighestFrac = remainders.filter(r => Math.abs(r.frac - highestFrac) < 1e-9);
-        
-        let winnerPartyIndices; // Could be multiple if tie-break returns multiple for some reason
-        if (tiedForHighestFrac.length === 1) {
-            winnerPartyIndices = [tiedForHighestFrac[0].idx];
-        } else {
-            winnerPartyIndices = applyTieBreak(tiedForHighestFrac, 1, tieBreakRule, parties);
-            ensureBaseSeatsLength(); // `parties` might have been modified by `applyTieBreak`
-        }
-        
-        if (!winnerPartyIndices || winnerPartyIndices.length === 0) {
-            console.warn("Tie-break for largest remainder failed. Assigning to first tied.");
-            if (tiedForHighestFrac.length > 0) winnerPartyIndices = [tiedForHighestFrac[0].idx];
-            else break; // No candidates to assign to
-        }
-
-        const winnerIdx = winnerPartyIndices[0]; // take the first winner
-        
-        if (baseSeats[winnerIdx] === undefined || isNaN(baseSeats[winnerIdx])) {
-            baseSeats[winnerIdx] = 0;
-        }
-        baseSeats[winnerIdx]++;
-        allocatedSeatsSum++; // Keep track of total allocated seats
-        
-        const winnerInRemaindersList = remainders.find(r => r.idx === winnerIdx);
-        if (winnerInRemaindersList) {
-            winnerInRemaindersList.frac = -1.0; // Mark as used
-        }
-
-        if (allocatedSeatsSum >= currentSeats) break; // Stop if all seats are distributed
+        remainingSeats = 0; // Все оставшиеся места были распределены через тай-брейк
+        break; // Выходим из цикла по группам остатков
+      }
     }
   }
   ensureBaseSeatsLength();
   return baseSeats;
-}
 
 
 // mandates.js -> divisorMethod
