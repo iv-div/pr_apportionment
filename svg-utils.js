@@ -133,7 +133,8 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
     console.warn("Max rows reached in buildSVG, some seats may not be drawn.");
   }
 
-
+  const circleScaleFactor = Math.max(0.2, Math.min(1, 300 / total));
+  const textScaleFactor = 1; 
   const scaleFactor = Math.max(1, Math.sqrt(total / 200)); 
   const baseOuterR = outerRCalculated > 0 ? outerRCalculated : innerR + seatR; // Ensure baseOuterR is positive 
   
@@ -157,7 +158,7 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
 
   const svg = [`<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`];
   svg.push(`<rect width="100%" height="100%" fill="white"/>`);
-  svg.push(`<text x="${totalWidth / 2}" y="${topPaddingTitle / 2}" text-anchor="middle" dominant-baseline="middle" font-size="${18 * scaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  svg.push(`<text x="${totalWidth / 2}" y="${topPaddingTitle / 2}" text-anchor="middle" dominant-baseline="middle" font-size="${18 * textScaleFactor}" font-family="sans-serif" font-weight="bold">${title}</text>`);
 
   let currentSeatVisualIndex = 0;
   const scaledSeatR = Math.max(1, seatR * scaleFactor); // Ensure seat radius is at least 1
@@ -186,14 +187,14 @@ function buildSVG(title, counts, names, colors, seatR = 6, gap = 1, innerR = 28)
       
       svg.push(`<circle cx="${diagramCenterX + x * scaleFactor}" 
                         cy="${diagramCenterY - y * scaleFactor}" 
-                        r="${scaledSeatR}" 
+                        r="${seatR * circleScaleFactor}"
                         fill="${fillColor}" 
                         stroke="${strokeColor}" 
                         stroke-width="${Math.max(0.1, strokeWidth)}"/>`); // Ensure stroke width is positive
     }
   });
 
-  svg.push(`<text x="${diagramCenterX}" y="${diagramCenterY + scaledSeatR + 20 * scaleFactor}" text-anchor="middle" font-size="${Math.max(8, 14 * scaleFactor)}" font-family="sans-serif">${total} seats</text>`);
+  svg.push(`<text x="${diagramCenterX}" y="${diagramCenterY + scaledSeatR + 20 * scaleFactor}" text-anchor="middle" font-size="${Math.max(8, 14 * textScaleFactor)}" font-family="sans-serif">${total} seats</text>`);
 
   const legX = diagramWidth + 2 * horizontalPadding;
   let legYCurrent = topPaddingTitle; 
