@@ -46,6 +46,14 @@ function svgToImage(svgString, callback) {
 }
 
 function buildSVG(title, counts, names, colors) {
+  function splitLegendLabel(label) {
+    const idx = label.indexOf('(');
+    if (idx === -1) return [label];
+    const first = label.slice(0, idx).trim();
+    const second = label.slice(idx).trim();
+    return [first, second];
+  }
+
   const fontTitleSize = 42;
   const fontLegendSize = 36;
   const fontSeatsLabelSize = 36;
