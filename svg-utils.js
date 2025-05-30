@@ -50,7 +50,7 @@ function buildSVG(title, counts, names, colors) {
   const fontLegendSize = 36;
   const fontSeatsLabelSize = 36;
 
-  const maxSeatRadius = 30;
+  const maxSeatRadius = 28;
 
   const canvasWidth = 1000;
   const canvasHeight = 600;
@@ -142,11 +142,14 @@ function buildSVG(title, counts, names, colors) {
   let legY = titleHeight;
   const legX = canvasWidth - legendWidth + 10;
   partyObjs.forEach(p => {
+    const lines = splitLegendLabel(`${p.name} – ${p.c}`);
+    lines.forEach((line, i) => {
+      svg.push(`<text x="${legX + 20}" y="${legY + 4 + i * 14}" font-size="${fontLegendSize}" font-family="sans-serif">${line}</text>`);
+    });
     svg.push(`<rect x="${legX}" y="${legY - 7}" width="14" height="14" fill="${p.color}" stroke="black" stroke-width="0.3"/>`);
-    svg.push(`<text x="${legX + 20}" y="${legY + 4}" font-size="${fontSeatsLabelSize}" font-family="sans-serif">${p.name} – ${p.c}</text>`);
-    legY += 20;
+    legY += lines.length * 16; // увеличиваем отступ в зависимости от числа строк
   });
-
+  
   svg.push(`</svg>`);
   return svg.join('\n');
 }
