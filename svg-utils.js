@@ -46,6 +46,12 @@ function svgToImage(svgString, callback) {
 }
 
 function buildSVG(title, counts, names, colors) {
+  const fontTitleSize = 24;
+  const fontLegendSize = 16;
+  const fontSeatsLabelSize = 16;
+
+  const maxSeatRadius = 60;
+
   const canvasWidth = 1000;
   const canvasHeight = 600;
 
@@ -73,7 +79,7 @@ function buildSVG(title, counts, names, colors) {
   if (total === 0) {
     return `<svg width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="white"/>
-      <text x="${canvasWidth / 2}" y="${canvasHeight / 2}" text-anchor="middle" font-size="16" font-family="sans-serif">No seats allocated</text>
+      <text x="${canvasWidth / 2}" y="${canvasHeight / 2}" text-anchor="middle" font-size="${fontTitleSize}" font-family="sans-serif">No seats allocated</text>
     </svg>`;
   }
 
@@ -95,7 +101,7 @@ function buildSVG(title, counts, names, colors) {
   const horizontalLimit = (maxHorizontalRadius - minGap * layers) / (2 * layers);
   const verticalLimit = (maxVerticalRadius - minGap * layers) / (2 * layers);
 
-  seatR = Math.min(horizontalLimit, verticalLimit);
+  seatR = Math.min(horizontalLimit, verticalLimit, maxSeatRadius);
 
   const coords = [], visible = [];
   let totalPlaced = 0;
@@ -117,7 +123,7 @@ function buildSVG(title, counts, names, colors) {
 
   const svg = [`<svg width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}" xmlns="http://www.w3.org/2000/svg">`];
   svg.push(`<rect width="100%" height="100%" fill="white"/>`);
-  svg.push(`<text x="${canvasWidth / 2}" y="${titleHeight / 2}" text-anchor="middle" font-size="20" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  svg.push(`<text x="${canvasWidth / 2}" y="${titleHeight / 2}" text-anchor="middle" font-size="${fontTitleSize}" font-family="sans-serif" font-weight="bold">${title}</text>`);
   svg.push(`<rect x="0" y="0" width="${canvasWidth}" height="${canvasHeight}" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="4 4"/>`);
   svg.push(`<rect x="${plotAreaLeft}" y="${titleHeight}" width="${plotAreaWidth}" height="${plotAreaHeight}" fill="none" stroke="blue" stroke-width="1" stroke-dasharray="4 2"/>`);
   svg.push(`<rect x="${canvasWidth - legendWidth}" y="0" width="${legendWidth}" height="${canvasHeight}" fill="none" stroke="green" stroke-width="1" stroke-dasharray="3 3"/>`);
@@ -131,13 +137,13 @@ function buildSVG(title, counts, names, colors) {
     }
   });
 
-  svg.push(`<text x="${centerX}" y="${centerY + 20}" text-anchor="middle" font-size="14" font-family="sans-serif">${total} seats</text>`);
+  svg.push(`<text x="${centerX}" y="${centerY + 20}" text-anchor="middle" font-size="${fontLegendSize}" font-family="sans-serif">${total} seats</text>`);
 
   let legY = titleHeight;
   const legX = canvasWidth - legendWidth + 10;
   partyObjs.forEach(p => {
     svg.push(`<rect x="${legX}" y="${legY - 7}" width="14" height="14" fill="${p.color}" stroke="black" stroke-width="0.3"/>`);
-    svg.push(`<text x="${legX + 20}" y="${legY + 4}" font-size="12" font-family="sans-serif">${p.name} – ${p.c}</text>`);
+    svg.push(`<text x="${legX + 20}" y="${legY + 4}" font-size="${fontSeatsLabelSize}" font-family="sans-serif">${p.name} – ${p.c}</text>`);
     legY += 20;
   });
 
