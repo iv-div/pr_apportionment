@@ -445,15 +445,15 @@ function quotaMethod(parties, totalSeatsToAllocate, quotaFn, overAllocRule, tieB
 }
 
 
+// mandates.js -> divisorMethod
 function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
-  console.log(`DivisorMethod START - Target seats: ${seatsToAllocate}, Parties count: ${parties.length}`);
-  let allocatedThisRun = 0; // Счетчик фактически выделенных мест
+  console.log(`DivisorMethod START - Target seats: ${seatsToAllocate}, Parties count: ${parties.length}, DivisorFn: ${divisorFn.toString().substring(0,30)}...`);
+  let allocatedThisRun = 0;
   
   if (!parties || parties.length === 0) return [];
   const numParties = parties.length;
   let currentAllocation = Array(numParties).fill(0);
 
-  // Ensure allocation array length matches parties array length
   const ensureAllocationLength = () => {
       while(currentAllocation.length < parties.length) {
           currentAllocation.push(0);
@@ -462,78 +462,106 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
   ensureAllocationLength();
   
   if (seatsToAllocate <= 0) {
-      return currentAllocation; // All 0s
+      return currentAllocation;
   }
   
   let partyQuotients = parties.map((p, i) => ({
     idx: i, 
     votes: (p.votes || 0),
     index: (p.index === undefined ? i : p.index),
-    currentSeatsInternal: 0, // Seats for this party in this method's context
+    currentSeatsInternal: 0,
     quotient: (p.votes || 0) / divisorFn(0) 
   })).filter(pq => pq.votes > 0 && isFinite(pq.quotient) && !isNaN(pq.quotient) && pq.quotient > 0);
 
 
-  for (let s = 0; s < seatsToAllocate; s++) {
+  // Цикл продолжается, пока не распределены все seatsToAllocate ИЛИ пока есть кому распределять
+  while (allocatedThisRun < seatsToAllocate) {
     if (partyQuotients.length === 0) {
-        console.warn(`Divisor method (${divisorFn.toString()}): No eligible parties left at iteration ${s}. Target: ${seatsToAllocate}`);
+        console.warn(`Divisor method: No eligible parties left. Allocated: ${allocatedThisRun}, Target: ${seatsToAllocate}`);
         break;
     }
 
     partyQuotients.sort((a, b) => {
       if (Math.abs(b.quotient - a.quotient) > 1e-9) return b.quotient - a.quotient;
-      if (b.votes !== a.votes) return b.votes - a.votes;
-      return a.index - b.index;
+      if (b.votes !== a.votes) return b.votes - a.votes; // Вторичная сортировка по голосам (если частные равны)
+      return a.index - b.index; // Третичная по индексу
     });
     
-    if (partyQuotients[0].quotient <= 0 && s > 0) { // No positive quotients left
-        console.warn(`Divisor method (${divisorFn.toString()}): All remaining quotients are zero or negative at iteration ${s}. Target: ${seatsToAllocate}`);
+    // Проверка, если все оставшиеся частные <= 0 (кроме, возможно, первой итерации)
+    if (partyQuotients[0].quotient <= 1e-9 && allocatedThisRun > 0) { 
+        console.warn(`Divisor method: All remaining quotients are effectively zero or negative. Allocated: ${allocatedThisRun}, Target: ${seatsToAllocate}`);
         break;
     }
     
     const maxQ = partyQuotients[0].quotient;
+    // Все кандидаты с максимальным (или очень близким к максимальному) частным
     const topCandidates = partyQuotients.filter(pq => Math.abs(pq.quotient - maxQ) < 1e-9);
-
-    let winners; 
-    if (topCandidates.length === 1) {
-      winners = [topCandidates[0].idx];
-    } else { 
-      winners = applyTieBreak(topCandidates, 1, tieBreakRule, parties); // parties array can be modified here
-      ensureAllocationLength(); // Re-check length after tie-break
-    }
-
-    if (!winners || winners.length === 0) {
-        console.warn(`Divisor method (${divisorFn.toString()}): Tie-break returned no winners at iteration ${s}. Target: ${seatsToAllocate}`);
-        break;
-    }
     
-    const winnerIdx = winners[0]; 
-    
-    if (currentAllocation[winnerIdx] === undefined || isNaN(currentAllocation[winnerIdx])) {
-        currentAllocation[winnerIdx] = 0;
-    }
-    currentAllocation[winnerIdx]++;
-    allocatedThisRun++; // Увеличиваем счетчик
+    const seatsRemainingToAllocateThisStep = seatsToAllocate - allocatedThisRun;
 
-    
-    const partyThatWon = partyQuotients.find(pq => pq.idx === winnerIdx);
-    if (partyThatWon) {
-        partyThatWon.currentSeatsInternal++;
-        partyThatWon.quotient = partyThatWon.votes / divisorFn(partyThatWon.currentSeatsInternal);
-        if (!isFinite(partyThatWon.quotient) || isNaN(partyThatWon.quotient) || partyThatWon.quotient <=0) {
-            // Effectively remove party from consideration if its next quotient is invalid/zero
-            partyQuotients = partyQuotients.filter(pq => pq.idx !== winnerIdx);
+    if (topCandidates.length <= seatsRemainingToAllocateThisStep) {
+      // Если количество партий с наивысшим частным МЕНЬШЕ или РАВНО количеству оставшихся мест,
+      // отдаем каждой из этих партий по одному месту.
+      console.log(`Allocating ${topCandidates.length} seats to ${topCandidates.length} parties directly (enough remaining seats).`);
+      for (const candidate of topCandidates) {
+        if (allocatedThisRun >= seatsToAllocate) break; // Дополнительная проверка
+
+        const winnerIdx = candidate.idx;
+        if (currentAllocation[winnerIdx] === undefined || isNaN(currentAllocation[winnerIdx])) {
+            currentAllocation[winnerIdx] = 0;
         }
+        currentAllocation[winnerIdx]++;
+        allocatedThisRun++;
+
+        // Обновляем частное для этой партии
+        const partyInQuotientList = partyQuotients.find(pq => pq.idx === winnerIdx);
+        if (partyInQuotientList) {
+            partyInQuotientList.currentSeatsInternal++;
+            partyInQuotientList.quotient = partyInQuotientList.votes / divisorFn(partyInQuotientList.currentSeatsInternal);
+            if (!isFinite(partyInQuotientList.quotient) || isNaN(partyInQuotientList.quotient) || partyInQuotientList.quotient <= 1e-9) {
+                partyQuotients = partyQuotients.filter(pq => pq.idx !== partyInQuotientList.idx);
+            }
+        }
+      }
     } else {
-        if (!parties[winnerIdx]) {
-             console.error(`Divisor method: Critical error. winnerIdx ${winnerIdx} is out of bounds for 'parties' array even after tie-break. This should not happen.`);
-             break; // Break only on a truly unexpected condition
+      // Если количество партий с наивысшим частным БОЛЬШЕ, чем оставшихся мест,
+      // то применяем правило тай-брейка для распределения ОСТАВШИХСЯ МЕСТ.
+      console.log(`Tie detected: ${topCandidates.length} parties for ${seatsRemainingToAllocateThisStep} remaining seats. Applying tie-break rule: ${tieBreakRule}`);
+      const winnersIndices = applyTieBreak(topCandidates, seatsRemainingToAllocateThisStep, tieBreakRule, parties);
+      ensureAllocationLength(); // `parties` могли быть изменены
+
+      if (!winnersIndices || winnersIndices.length === 0) {
+          console.warn(`Divisor method: Tie-break returned no winners for ${seatsRemainingToAllocateThisStep} seats. Breaking allocation.`);
+          break;
+      }
+      
+      // Распределяем места согласно результатам тай-брейка
+      for (const winnerIdx of winnersIndices) {
+        if (allocatedThisRun >= seatsToAllocate) break;
+
+        if (currentAllocation[winnerIdx] === undefined || isNaN(currentAllocation[winnerIdx])) {
+            currentAllocation[winnerIdx] = 0;
         }
-        // If parties[winnerIdx] exists, it's likely the disputed party.
-        console.log(`Divisor method: Party with idx ${winnerIdx} (likely 'Disputed') won a seat. Not in partyQuotients for quotient update.`);
+        currentAllocation[winnerIdx]++;
+        allocatedThisRun++;
+
+        // Обновляем частное для партии, получившей место (если это не "спорная" партия)
+        const partyInQuotientList = partyQuotients.find(pq => pq.idx === winnerIdx);
+        if (partyInQuotientList) {
+            partyInQuotientList.currentSeatsInternal++;
+            partyInQuotientList.quotient = partyInQuotientList.votes / divisorFn(partyInQuotientList.currentSeatsInternal);
+            if (!isFinite(partyInQuotientList.quotient) || isNaN(partyInQuotientList.quotient) || partyInQuotientList.quotient <= 1e-9) {
+                partyQuotients = partyQuotients.filter(pq => pq.idx !== partyInQuotientList.idx);
+            }
+        }
+      }
+      // После разрешения тай-брейка для ОСТАВШИХСЯ мест, цикл должен завершиться,
+      // так как allocatedThisRun должно стать равным seatsToAllocate.
+      // Поэтому `break;` здесь неявно предполагается основным условием `while`.
     }
-  }
+  } // Конец while (allocatedThisRun < seatsToAllocate)
+
   ensureAllocationLength();
-  console.log(`DivisorMethod END - Target: ${seatsToAllocate}, Actually allocated: ${allocatedThisRun}, Result:`, currentAllocation);
+  console.log(`DivisorMethod END - Target: ${seatsToAllocate}, Actually allocated: ${allocatedThisRun}, Result:`, currentAllocation, `Parties after:`, JSON.parse(JSON.stringify(parties)));
   return currentAllocation;
 }
