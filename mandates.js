@@ -569,4 +569,4 @@ function divisorMethod(parties, seatsToAllocate, divisorFn, tieBreakRule) {
   ensureAllocationLength();
   console.log(`DivisorMethod END - Target: ${seatsToAllocate}, Actually allocated: ${allocatedThisRun}, Result:`, currentAllocation, `Parties after:`, JSON.parse(JSON.stringify(parties)));
   return currentAllocation;
-}
+}}
