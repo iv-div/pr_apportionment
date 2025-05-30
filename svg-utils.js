@@ -113,6 +113,10 @@ function buildSVG(title, counts, names, colors) {
   const svg = [`<svg width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}" xmlns="http://www.w3.org/2000/svg">`];
   svg.push(`<rect width="100%" height="100%" fill="white"/>`);
   svg.push(`<text x="${canvasWidth / 2}" y="${titleHeight / 2}" text-anchor="middle" font-size="20" font-family="sans-serif" font-weight="bold">${title}</text>`);
+  svg.push(`<rect x="0" y="0" width="${canvasWidth}" height="${canvasHeight}" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="4 4"/>`);
+  svg.push(`<rect x="${plotAreaLeft}" y="${titleHeight}" width="${plotAreaWidth}" height="${plotAreaHeight}" fill="none" stroke="blue" stroke-width="1" stroke-dasharray="4 2"/>`);
+  svg.push(`<rect x="${canvasWidth - legendWidth}" y="0" width="${legendWidth}" height="${canvasHeight}" fill="none" stroke="green" stroke-width="1" stroke-dasharray="3 3"/>`);
+  svg.push(`<circle cx="${centerX}" cy="${centerY}" r="3" fill="red"/>`);
 
   let currentIndex = 0;
   partyObjs.forEach(p => {
