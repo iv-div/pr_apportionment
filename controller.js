@@ -304,8 +304,8 @@ export function init() {
   districtsContainer = qs("#districts-container");
   resultsContainer = qs("#results");
 
-  qs("#add-district-btn").addEventListener("click", () => addDistrict());
-  qs("#generate-btn").addEventListener("click", () => recalculateAll());
+  qs("#add-district").addEventListener("click", () => addDistrict());
+  qs("#generate").addEventListener("click", () => recalculateAll());
 
   // create first empty district by default
   addDistrict();
