@@ -50,6 +50,21 @@ function addDistrict(cloneSourceEl = null) {
       const clone = row.cloneNode(true);
       partyTbody.appendChild(clone);
     });
+  } else if (id === 1) {
+    const defaultColors = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00'];
+    for (let i = 0; i < 5; i++) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" class="party-id w-full border p-1" value="P${i + 1}" /></td>
+        <td><input type="text" class="party-name w-full border p-1" value="P${i + 1}" /></td>
+        <td><input type="color" class="party-color w-full" value="${defaultColors[i]}" /></td>
+        <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="0" /></td>
+        <td><button type="button" class="remove-party text-red-600">✕</button></td>
+      `;
+      row.querySelector(".remove-party")?.addEventListener("click", () => row.remove());
+      partyTbody.appendChild(row);
+      syncPartyRegistryFromRow(row);
+    }
   }
 
   qs(".clone-district", districtEl)?.addEventListener("click", () => addDistrict(districtEl));
@@ -81,7 +96,7 @@ function addPartyRow(tbody) {
     <td><input type="text" class="party-name w-full border p-1" placeholder="Name" /></td>
     <td><input type="color" class="party-color w-full" /></td>
     <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="0" /></td>
-    <td><button type="button" class="remove-party text-rose-600">✕</button></td>`;
+    <td><button type="button" class="remove-party text-red-600">✕</button></td>`;
   row.querySelector(".remove-party")?.addEventListener("click", () => row.remove());
   tbody.appendChild(row);
 }
@@ -204,46 +219,6 @@ function recalculateAll() {
       seatMap: allocationArr,
       legendRows: legendArr,
       totalSeats: totalSeats
-    });
-
-    const details = document.createElement("details");
-    details.className = "border mt-4";
-    const summary = document.createElement("summary");
-    summary.textContent = "Округа";
-    details.appendChild(summary);
-    mount.appendChild(details);
-
-    parsedDistricts.forEach((d) => {
-      const districtAllocation = allocateDistrict(d, method);
-      const allocArr = Object.entries(districtAllocation).map(([partyId, seats]) => ({
-        partyId,
-        seats,
-        color: (partyRegistry.get(partyId) || {}).color || "#888888"
-      })).sort((a, b) => b.seats - a.seats);
-
-      const legendArrD = allocArr.map((a) => {
-        const partyVotes = d.parties.find((p) => p.partyId === a.partyId)?.votes || 0;
-        const votePct = (partyVotes / d.parties.reduce((sum, p) => sum + p.votes, 0)) * 100;
-        return {
-          partyId: a.partyId,
-          name: (partyRegistry.get(a.partyId) || { name: a.partyId }).name,
-          color: a.color,
-          votePct,
-          seatPct: (a.seats / d.seats) * 100
-        };
-      });
-
-      const placeholder = document.createElement("div");
-      placeholder.className = "my-4";
-      details.appendChild(placeholder);
-
-      buildSVG({
-        mountEl: placeholder,
-        title: `${d.name}`,
-        seatMap: allocArr,
-        legendRows: legendArrD,
-        totalSeats: d.seats
-      });
     });
   });
 }

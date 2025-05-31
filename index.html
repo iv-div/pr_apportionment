@@ -1,110 +1,90 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="bg-slate-100 text-slate-700">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multi‑District Electoral Calculator</title>
-    <!-- Tailwind CDN (ок для тестов) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* простая анимация сворачиваемых блоков */
-      .collapse-enter,
-      .collapse-leave-to {
-        max-height: 0;
-        opacity: 0;
-        transition: max-height 0.25s ease, opacity 0.25s ease;
-      }
-      .collapse-enter-to,
-      .collapse-leave {
-        max-height: 1000px; /* достаточно большое значение */
-        opacity: 1;
-      }
-    </style>
-  </head>
-  <body class="min-h-screen bg-slate-50 text-slate-900 p-6">
-    <h1 class="text-3xl font-bold mb-6">Multi‑District Electoral Calculator</h1>
-
-    <!-- Панель действий -->
-    <div class="flex flex-wrap items-center gap-4 mb-8">
-      <button id="add-district" class="px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-500">
-        + Add district
-      </button>
-      <button id="generate" class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-500">
-        Generate diagrams
-      </button>
-    </div>
-
-    <!-- Контейнер округов -->
-    <div id="districts-container" class="space-y-6"></div>
-
-    <!-- Шаблон формы округа -->
-    <template id="district-template">
-      <div class="border rounded-xl bg-white shadow p-4" data-district>
-        <div class="flex items-center justify-between mb-4">
-          <input type="text" class="district-name text-xl font-semibold w-1/2 border-b" value="New district" />
-          <div class="flex gap-2 text-sm">
-            <button class="clone-district px-3 py-1 bg-sky-500 text-white rounded">Clone</button>
-            <button class="remove-district px-3 py-1 bg-rose-600 text-white rounded">Remove</button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4 mb-2">
-          <label class="col-span-1">Seats
-            <input type="number" class="seats w-full border p-1" min="1" value="10" />
-          </label>
-          <label class="col-span-1">Threshold (%)
-            <input type="number" class="threshold w-full border p-1" min="0" max="100" value="0" />
-          </label>
-          <label class="col-span-1">Tie‑break
-            <select class="tie-break w-full border p-1">
-              <option value="random">random</option>
-              <option value="mostVotes">most votes</option>
-              <option value="leastVotes">least votes</option>
-              <option value="index">lowest index</option>
-              <option value="disputed">disputed</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Таблица партий -->
-        <table class="w-full text-sm border-t">
-          <thead>
-            <tr>
-              <th class="text-left py-1">Party ID</th>
-              <th class="text-left py-1">Name</th>
-              <th class="text-left py-1">Color</th>
-              <th class="text-left py-1">Votes</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody class="parties-body"></tbody>
-        </table>
-        <button class="add-party mt-2 px-3 py-1 bg-emerald-500 text-white rounded">+ Add party</button>
-      </div>
-    </template>
-
-    <!-- Шаблон строки партии -->
-    <template id="party-row-template">
-      <tr>
-        <td><input type="text" class="party-id w-full border p-1" placeholder="ID" /></td>
-        <td><input type="text" class="party-name w-full border p-1" placeholder="Name" /></td>
-        <td><input type="color" class="party-color w-full" /></td>
-        <td><input type="number" class="party-votes w-full border p-1" min="0" value="0" /></td>
-        <td><button class="remove-party text-rose-600">✕</button></td>
-      </tr>
-    </template>
-
-    <!-- Результаты -->
-    <div id="results" class="mt-10 space-y-8">
-      <h2 class="text-2xl font-bold">National results</h2>
-      <div id="results-hare"></div>
-      <div id="results-droop"></div>
-      <div id="results-imperiali"></div>
-      <div id="results-dhondt"></div>
-      <div id="results-saintelague"></div>
-    </div>
-
-    <!-- Подключение скриптов -->
+    <title>Интерактивный калькулятор выборов</title>
     <script type="module" src="./main.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-700">
+    <main class="max-w-4xl mx-auto px-4 py-6">
+      <h1 class="text-3xl font-bold mb-6">Интерактивный калькулятор выборов</h1>
+
+      <section class="space-y-4">
+        <button
+          id="add-district"
+          type="button"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+        >
+          + Добавить округ
+        </button>
+
+        <div id="districts-container" class="space-y-6"></div>
+
+        <button
+          id="generate"
+          type="button"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+        >
+          Сгенерировать диаграммы
+        </button>
+
+        <div id="results" class="mt-8"></div>
+      </section>
+
+      <template id="district-template">
+        <section class="bg-white p-4 rounded-xl shadow-xl border space-y-4">
+          <div class="flex items-center justify-between">
+            <input
+              type="text"
+              class="district-name font-semibold text-lg border p-2 rounded w-full mr-2"
+              placeholder="Название округа"
+            />
+            <button type="button" class="clone-district text-blue-600 text-sm">📋 Клонировать</button>
+            <button type="button" class="remove-district text-red-600 ml-2 text-sm">✕ Удалить</button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <label class="block">
+              <span class="text-sm">Число мандатов</span>
+              <input type="number" class="seats w-full border p-1" value="10" min="1" />
+            </label>
+            <label class="block">
+              <span class="text-sm">Проходной барьер (%)</span>
+              <input type="number" class="threshold w-full border p-1" value="0" step="any" min="0" max="100" />
+            </label>
+            <label class="block">
+              <span class="text-sm">Разрешение ничьей</span>
+              <select class="tie-break w-full border p-1">
+                <option value="random">Случайно</option>
+                <option value="first-listed">В пользу первой</option>
+              </select>
+            </label>
+          </div>
+
+          <div>
+            <table class="w-full text-sm border mt-2">
+              <thead>
+                <tr class="bg-slate-200">
+                  <th class="p-1 border">ID</th>
+                  <th class="p-1 border">Название</th>
+                  <th class="p-1 border">Цвет</th>
+                  <th class="p-1 border">Голоса</th>
+                  <th class="p-1 border"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button
+              type="button"
+              class="add-party mt-2 text-green-700 text-sm"
+            >
+              + Добавить партию
+            </button>
+          </div>
+        </section>
+      </template>
+    </main>
   </body>
 </html>
