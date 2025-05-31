@@ -70,9 +70,9 @@ function addDistrict(cloneSourceEl = null) {
   }
 
   // add listeners for clone / remove / add party row
-  qs(".clone-district-btn", districtEl).addEventListener("click", () => addDistrict(districtEl));
-  qs(".remove-district-btn", districtEl).addEventListener("click", () => removeDistrict(id));
-  qs(".add-party-btn", districtEl).addEventListener("click", () => addPartyRow(partyTbody));
+  qs(".clone-district", districtEl).addEventListener("click", () => addDistrict(districtEl));
+  qs(".remove-district", districtEl).addEventListener("click", () => removeDistrict(id));
+  qs(".add-party", districtEl).addEventListener("click", () => addPartyRow(partyTbody));
 
   // sync party edits
   partyTbody.addEventListener("input", (e) => {
