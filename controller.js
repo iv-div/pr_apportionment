@@ -3,7 +3,7 @@
 //  Handles up to 650 districts, global party registry, aggregation
 // =============================================================
 
-import { METHODS, allocateDistrict } from ".allocators.js";
+import { METHODS, allocateDistrict } from "./allocators.js";
 import { buildSVG } from "./svg-utils.js";
 
 /*************************
