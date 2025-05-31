@@ -1,6 +1,7 @@
-// =============================
-// File: src/main.js
-// =============================
 import { init } from './ui/controller.js';
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
