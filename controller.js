@@ -3,8 +3,9 @@
 //  Handles up to 650 districts, global party registry, aggregation
 // =============================================================
 
-import { METHODS, allocateDistrict } from "./allocators.js";
+import { PR_METHODS, allocateDistrict } from "./allocators.js";
 import { buildSVG } from "./svg-utils.js";
+const METHODS = Object.values(PR_METHODS);   
 
 /*************************
  * Module‑level state
