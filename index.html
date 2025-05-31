@@ -2,253 +2,104 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta http‑equiv="X‑UA‑Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device‑width, initial‑scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Multi‑District Electoral Calculator</title>
-    <!-- TailwindCSS CDN -->
+    <!-- TailwindCSS CDN (ok для тестов) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* простой transition для сворачиваемых блоков */
       .collapse-enter,
       .collapse-leave-to {
         max-height: 0;
         opacity: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
+        transition: max-height 0.25s ease, opacity 0.25s ease;
       }
       .collapse-enter-to,
       .collapse-leave {
-        max-height: 1000px;
+        max-height: 999px;
         opacity: 1;
       }
     </style>
   </head>
-  <body class="bg-gray-50 text-gray-800">
-    <div class="container mx-auto max-w-7xl p-6">
-      <!-- Header -->
-      <header class="mb-8 text-center">
-        <h1 class="text-3xl font-bold">Multi‑District Electoral Calculator</h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Поддерживает до 650 округов и пять классических методов PR‑распределения
-          (Hare, Droop, Imperiali, D’Hondt, Sainte‑Laguë)
-        </p>
-      </header>
+  <body class="bg-slate-50 text-gray-900">
+    <header class="py-4 bg-indigo-600 text-white text-center text-2xl font-semibold">
+      Многокруговой калькулятор распределения мандатов
+    </header>
 
+    <main class="max-w-6xl mx-auto p-4 space-y-8">
       <!-- Global controls -->
-      <section id="global-controls" class="mb-8">
-        <div class="bg-white shadow rounded-xl p-4">
-          <div class="flex flex-wrap gap-4 items-end">
-            <div>
-              <label for="global-method" class="block text-sm font-medium"
-                >Метод визуализации:</label
-              >
-              <select
-                id="global-method"
-                class="mt-1 block w-40 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-              >
-                <option value="hare">Hare quota</option>
-                <option value="droop">Droop quota</option>
-                <option value="imperiali">Imperiali quota</option>
-                <option value="dhondt">D’Hondt divisor</option>
-                <option value="saintelague" selected>Sainte‑Laguë divisor</option>
-              </select>
-            </div>
-
-            <!-- Advanced settings toggler -->
-            <button
-              id="advanced-toggle"
-              type="button"
-              class="inline-flex items-center px-3 py-2 rounded-lg text-indigo-600 border border-indigo-600 hover:bg-indigo-50 text-sm"
-            >
-              Advanced settings
-            </button>
-
-            <button
-              id="generate-btn"
-              type="button"
-              class="ml-auto inline-flex items-center px-6 py-3 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow"
-            >
-              Generate diagrams
-            </button>
-          </div>
-
-          <!-- Advanced settings block -->
-          <div
-            id="advanced-panel"
-            class="mt-4 collapse-enter hidden"
-          >
-            <div class="grid sm:grid-cols-3 gap-4 text-sm">
-              <div>
-                <label
-                  for="threshold"
-                  class="block font-medium text-gray-700"
-                  >Порог (%)</label
-                >
-                <input
-                  id="threshold"
-                  type="number"
-                  min="0"
-                  max="50"
-                  step="0.1"
-                  value="0"
-                  class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label for="tie-break" class="block font-medium text-gray-700"
-                  >Tie‑break</label
-                >
-                <select
-                  id="tie-break"
-                  class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="random">Random</option>
-                  <option value="most-votes">Most votes</option>
-                  <option value="least-votes">Least votes</option>
-                  <option value="lowest-index">Lowest index</option>
-                  <option value="disputed">Disputed mandates</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  for="over-alloc"
-                  class="block font-medium text-gray-700"
-                  >Over‑allocation policy</label
-                >
-                <select
-                  id="over-alloc"
-                  class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="ignore">Ignore (increase size)</option>
-                  <option value="largest">Remove from largest</option>
-                  <option value="smallest">Remove from smallest</option>
-                  <option value="recalc">Recalculate quota/divisor</option>
-                </select>
-              </div>
-            </div>
-          </div>
+      <section class="bg-white p-4 rounded shadow">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Настройки</h2>
+          <button id="add-district" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+            + Добавить округ
+          </button>
         </div>
+        <p class="text-sm text-gray-600 mt-2">Калькулятор всегда строит <strong>все пять методов</strong> (Hare, Droop, Imperiali, D’Hondt, Sainte‑Laguë) ― выбор метода не требуется.</p>
       </section>
 
-      <!-- Districts control bar -->
-      <section class="mb-4 flex items-center gap-2">
-        <h2 class="text-xl font-semibold">Округа</h2>
-        <button
-          id="add-district"
-          type="button"
-          class="ml-auto inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-        >
-          + Add district
-        </button>
-      </section>
-
-      <!-- Container where districts will be injected -->
-      <div id="districts-container" class="space-y-6"></div>
+      <!-- Districts will be injected here -->
+      <section id="districts-container" class="space-y-6"></section>
 
       <!-- Results -->
-      <section id="results" class="mt-12 hidden">
-        <!-- The controller will inject national and per‑district SVG blocks here -->
-      </section>
-    </div>
+      <section id="results" class="space-y-8"></section>
+    </main>
 
-    <!-- ======= Templates ======= -->
+    <!-- Template for a district block -->
     <template id="district-template">
-      <div class="district-card bg-white shadow rounded-xl p-4">
-        <!-- Header with name & controls -->
-        <div class="flex items-center mb-4 gap-2">
-          <input
-            type="text"
-            class="district-name flex-1 text-lg font-medium rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-            value="New district"
-          />
-          <button
-            type="button"
-            class="clone-district px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-100"
-            title="Clone district"
-          >
-            Clone
-          </button>
-          <button
-            type="button"
-            class="remove-district px-3 py-1.5 text-sm rounded-md border border-red-300 text-red-600 hover:bg-red-50"
-            title="Delete district"
-          >
-            ×
-          </button>
-        </div>
+      <article class="bg-white p-4 rounded shadow" data-district>
+        <header class="flex justify-between items-center mb-3">
+          <input type="text" class="district-name border p-1 rounded w-full mr-2" placeholder="Название округа" />
+          <div class="space-x-2">
+            <button class="clone-district px-2 py-1 text-sm bg-slate-200 rounded hover:bg-slate-300">Clone</button>
+            <button class="remove-district px-2 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600">×</button>
+          </div>
+        </header>
 
-        <!-- Seats input -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-1">Число мандатов</label>
-          <input
-            type="number"
-            min="1"
-            max="3000"
-            value="10"
-            class="district-seats w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-          />
+        <div class="grid grid-cols-5 gap-2 items-end mb-4">
+          <label class="col-span-2 text-sm">Мандатов
+            <input type="number" class="district-seats border p-1 rounded w-full" min="1" max="3000" value="10" />
+          </label>
+          <label class="col-span-2 text-sm">Барьер, %
+            <input type="number" class="district-threshold border p-1 rounded w-full" min="0" max="20" step="0.1" value="0" />
+          </label>
+          <label class="col-span-1 text-sm">Tie‑break
+            <select class="district-tiebreak border p-1 rounded w-full">
+              <option value="votes">Most votes</option>
+              <option value="least">Least votes</option>
+              <option value="index">Lowest index</option>
+              <option value="random">Random</option>
+              <option value="disputed">Disputed</option>
+            </select>
+          </label>
         </div>
 
         <!-- Parties table -->
-        <div class="mb-4">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-gray-600">
-                <th class="w-1/4">Партия</th>
-                <th class="w-1/4">Голоса</th>
-                <th class="w-1/4">Цвет</th>
-                <th class="w-1/4"></th>
-              </tr>
-            </thead>
-            <tbody class="party-rows"></tbody>
-          </table>
-          <button
-            type="button"
-            class="add-party mt-2 inline-flex items-center px-2 py-1.5 text-xs rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-          >
-            + Add party
-          </button>
-        </div>
-      </div>
+        <table class="w-full text-sm mb-3 border-collapse">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="p-1 border">Партия</th>
+              <th class="p-1 border">Голоса</th>
+              <th class="p-1 border">Цвет</th>
+              <th class="p-1 border w-8"></th>
+            </tr>
+          </thead>
+          <tbody class="parties-body"></tbody>
+        </table>
+        <button class="add-party px-3 py-1 bg-slate-200 text-sm rounded hover:bg-slate-300">+ Добавить партию</button>
+      </article>
     </template>
 
+    <!-- Template for party row -->
     <template id="party-row-template">
-      <tr class="party-row">
-        <td>
-          <input
-            type="text"
-            class="party-name w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Название"
-          />
-        </td>
-        <td>
-          <input
-            type="number"
-            min="0"
-            class="party-votes w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="0"
-          />
-        </td>
-        <td>
-          <input
-            type="color"
-            class="party-color h-9 w-14 rounded-md border-gray-300 p-1"
-            value="#888888"
-          />
-        </td>
-        <td class="text-right">
-          <button
-            type="button"
-            class="remove-party text-red-600 hover:text-red-800 text-sm"
-            title="Delete party"
-          >
-            ×
-          </button>
-        </td>
+      <tr data-party>
+        <td class="border p-1"><input type="text" class="party-name w-full p-1 border rounded" placeholder="Название" /></td>
+        <td class="border p-1"><input type="number" class="party-votes w-full p-1 border rounded" min="0" value="0" /></td>
+        <td class="border p-1"><input type="color" class="party-color w-full h-6" value="#888888" /></td>
+        <td class="border p-1 text-center"><button class="remove-party text-red-600">×</button></td>
       </tr>
     </template>
 
-    <!-- ========= Scripts ========= -->
+    <!-- Main bootstrap -->
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
