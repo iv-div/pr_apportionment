@@ -238,7 +238,8 @@ function recalculateAll() {
         name: (partyRegistry.get(a.partyId) || { name: a.partyId }).name,
         color: a.color,
         votePct: ((votes / totalVotes) * 100) || 0,
-        seatPct: ((a.seats / totalSeats) * 100) || 0
+        seatPct: ((a.seats / totalSeats) * 100) || 0,
+        seats: a.seats
       };
     });
 

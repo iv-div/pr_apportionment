@@ -64,6 +64,17 @@ export function buildSVG(cfg) {
   svg.setAttribute('height', canvasHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
+  const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  titleText.setAttribute('x', canvasWidth / 2);
+  titleText.setAttribute('y', 40); // или 30 — можно подогнать по стилю
+  titleText.setAttribute('text-anchor', 'middle');
+  titleText.setAttribute('font-size', '24');
+  titleText.setAttribute('font-family', 'sans-serif');
+  titleText.setAttribute('font-weight', 'bold');
+  titleText.textContent = cfg.title;
+  svg.appendChild(titleText);
+
+
   // Debug rectangles and center dot
   const debugFullRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   debugFullRect.setAttribute('x', 0);
@@ -168,7 +179,7 @@ export function buildSVG(cfg) {
   const legX = canvasWidth - legendWidth + 10;
 
   cfg.legendRows.forEach(row => {
-    const lines = splitLegendLabel(`${row.name} – ${row.seats}`);
+    const lines = [`${row.name}`, `Голоса: ${row.votePct.toFixed(1)}%`, `Мандаты: ${row.seatPct.toFixed(1)}% (${row.seats})`];
     lines.forEach((line, i) => {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', legX + 20);
@@ -213,7 +224,6 @@ export function buildSVG(cfg) {
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
-  fig.appendChild(table);
 
   const btn = document.createElement('button');
   btn.className = 'mt-2 px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 text-xs';
