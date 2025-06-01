@@ -252,6 +252,17 @@ function recalculateAll() {
       legendRows: legendArr,
       totalSeats: actualTotalSeats
     });
+
+    // Создаем общий раскрывающийся блок для всех округов по текущему методу
+    const methodWrapper = document.createElement("details");
+    methodWrapper.className = "mb-6 border rounded p-3 bg-gray-50";
+    methodWrapper.open = false;
+
+    const methodSummary = document.createElement("summary");
+    methodSummary.className = "cursor-pointer font-bold";
+    methodSummary.textContent = `Диаграммы по округам — метод ${methodLabel(method)}`;
+    methodWrapper.appendChild(methodSummary);
+
     parsedDistricts.forEach((district) => {
       const allocation = allocateDistrict(district, method, { overAllocRule: district.overAllocRule });
 
@@ -281,13 +292,11 @@ function recalculateAll() {
 
       const summary = document.createElement("summary");
       summary.className = "cursor-pointer font-semibold";
-      summary.textContent = `Округ: ${district.name} (${methodLabel(method)})`;
+      summary.textContent = `Округ: ${district.name}`;
       wrapper.appendChild(summary);
 
       const mount = document.createElement("div");
       wrapper.appendChild(mount);
-      resultsContainer.appendChild(wrapper);
-
       buildSVG({
         mountEl: mount,
         title: `${methodLabel(method)} — ${district.name}`,
@@ -295,8 +304,15 @@ function recalculateAll() {
         legendRows,
         totalSeats: totalDistrictSeats
       });
+
+      methodWrapper.appendChild(wrapper);
     });
-    
+
+    // Добавляем группировку в результат
+    resultsContainer.appendChild(methodWrapper);
+
+
+
   });
 }
 
