@@ -230,7 +230,7 @@ function svgToPng(figureEl, downloadName) {
   img.onload = () => {
     const canvas = document.createElement('canvas');
     // Use viewBox for accurate sizing if available, otherwise clientWidth/Height
-    const view boxShadow = svgEl.viewBox?.baseVal;
+    const viewBox = svgEl.viewBox?.baseVal;
     if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
         canvas.width  = viewBox.width;
         canvas.height = viewBox.height;
