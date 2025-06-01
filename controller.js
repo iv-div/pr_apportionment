@@ -152,6 +152,8 @@ function parseDistrict(record) {
   const seats = parseInt(qs(".seats", el)?.value, 10) || 0;
   const threshold = parseFloat(qs(".threshold", el)?.value) || 0;
   const tieBreak = qs(".tie-break", el)?.value || "random";
+  const overAllocRule = qs(".over-alloc", el)?.value || "remove-large";
+
 
   const parties = [];
   qsa("tbody tr", el).forEach((row) => {
@@ -171,7 +173,8 @@ function parseDistrict(record) {
     seats,
     parties,
     barrier: threshold / 100,
-    tieBreak
+    tieBreak,
+    overAllocRule
   };
 }
 
@@ -207,7 +210,7 @@ function recalculateAll() {
   METHODS.forEach((method) => {
     const mTotals = new Map();
     parsedDistricts.forEach((d) => {
-      const allocation = allocateDistrict(d, method);
+      const allocation = allocateDistrict(d, method, { overAllocRule: d.overAllocRule });
       for (const [partyId, seats] of Object.entries(allocation)) {
         const prev = mTotals.get(partyId) || 0;
         mTotals.set(partyId, prev + seats);

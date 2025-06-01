@@ -36,8 +36,48 @@ export function buildSVG(cfg) {
   svg.setAttribute('viewBox', `0 0 ${canvasWidth} ${canvasHeight}`);
   svg.setAttribute('width', canvasWidth);
   svg.setAttribute('height', canvasHeight);
-  fig.appendChild(svg);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
+  // Debug rectangles and center dot
+  const debugFullRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  debugFullRect.setAttribute('x', 0);
+  debugFullRect.setAttribute('y', 0);
+  debugFullRect.setAttribute('width', canvasWidth);
+  debugFullRect.setAttribute('height', canvasHeight);
+  debugFullRect.setAttribute('fill', 'none');
+  debugFullRect.setAttribute('stroke', '#aaa');
+  debugFullRect.setAttribute('stroke-width', '1');
+  debugFullRect.setAttribute('stroke-dasharray', '4 4');
+  svg.appendChild(debugFullRect);
+
+  const debugPlotRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  debugPlotRect.setAttribute('x', plotAreaLeft);
+  debugPlotRect.setAttribute('y', titleHeight);
+  debugPlotRect.setAttribute('width', plotAreaWidth);
+  debugPlotRect.setAttribute('height', plotAreaHeight);
+  debugPlotRect.setAttribute('fill', 'none');
+  debugPlotRect.setAttribute('stroke', 'blue');
+  debugPlotRect.setAttribute('stroke-width', '1');
+  debugPlotRect.setAttribute('stroke-dasharray', '4 2');
+  svg.appendChild(debugPlotRect);
+
+  const debugLegendRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  debugLegendRect.setAttribute('x', canvasWidth - legendWidth);
+  debugLegendRect.setAttribute('y', 0);
+  debugLegendRect.setAttribute('width', legendWidth);
+  debugLegendRect.setAttribute('height', canvasHeight);
+  debugLegendRect.setAttribute('fill', 'none');
+  debugLegendRect.setAttribute('stroke', 'green');
+  debugLegendRect.setAttribute('stroke-width', '1');
+  debugLegendRect.setAttribute('stroke-dasharray', '3 3');
+  svg.appendChild(debugLegendRect);
+
+  const debugCenterCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  debugCenterCircle.setAttribute('cx', centerX);
+  debugCenterCircle.setAttribute('cy', centerY);
+  debugCenterCircle.setAttribute('r', '3');
+  debugCenterCircle.setAttribute('fill', 'red');
+  svg.appendChild(debugCenterCircle);
   const seatR = 5.5;
   const minGap = 1;
   let layers = 0, remaining = total;
@@ -98,11 +138,34 @@ export function buildSVG(cfg) {
   // Keep HTML legend as in new version
   const table = document.createElement('table');
   table.className = 'mt-3 text-sm w-full border-collapse';
-  table.innerHTML = `<thead><tr>
-    <th class="text-left pb-1">Партия</th>
-    <th class="text-right pb-1">% голосов</th>
-    <th class="text-right pb-1">% мандатов</th>
-  </tr></thead>`;
+  let legY = titleHeight;
+  const legX = canvasWidth - legendWidth + 10;
+
+  cfg.legendRows.forEach(row => {
+    const lines = splitLegendLabel(`${row.name} – ${row.seats}`);
+    lines.forEach((line, i) => {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', legX + 20);
+      text.setAttribute('y', legY + 4 + i * 14);
+      text.setAttribute('font-size', '14');
+      text.setAttribute('font-family', 'sans-serif');
+      text.textContent = line;
+      svg.appendChild(text);
+    });
+
+    const colorRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    colorRect.setAttribute('x', legX);
+    colorRect.setAttribute('y', legY - 7);
+    colorRect.setAttribute('width', '14');
+    colorRect.setAttribute('height', '14');
+    colorRect.setAttribute('fill', row.color);
+    colorRect.setAttribute('stroke', 'black');
+    colorRect.setAttribute('stroke-width', '0.3');
+    svg.appendChild(colorRect);
+
+    legY += lines.length * 16 + 4;
+  });
+
   const tbody = document.createElement('tbody');
 
   function splitLegendLabel(label) {
