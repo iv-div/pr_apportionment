@@ -11,6 +11,23 @@ const partyRegistry = new Map();
 let districtCounter = 0;
 let nextPartyNumber = 1;
 
+const COLOR_PALETTE = [
+  "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
+  "#ffff33", "#a65628", "#f781bf", "#999999", "#66c2a5",
+  "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f",
+  "#e5c494", "#b3b3b3", "#1b9e77", "#d95f02", "#7570b3",
+  "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666",
+  "#8c564b", "#bcbd22", "#17becf", "#ff9896", "#c5b0d5"
+];
+let nextColorIndex = 0;
+
+function getNextColor() {
+  const color = COLOR_PALETTE[nextColorIndex % COLOR_PALETTE.length];
+  nextColorIndex++;
+  return color;
+}
+
+
 function qs(sel, root = document) {
   const el = root.querySelector(sel);
   if (!el) console.warn(`Element not found: ${sel}`, root);
@@ -56,9 +73,19 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
   const partyTbody = qs("tbody", districtEl);
   if (cloneSourceEl) {
     qsa("tbody tr", cloneSourceEl).forEach((row) => {
-      const clone = row.cloneNode(true);
-      partyTbody.appendChild(clone);
+      const partyId = row.querySelector(".party-id")?.value.trim();
+      const partyName = row.querySelector(".party-name")?.value.trim();
+      const partyColor = row.querySelector(".party-color")?.value;
+      const partyVotes = parseInt(row.querySelector(".party-votes")?.value, 10) || 0;
+
+      addPartyRow(partyTbody, {
+        id: partyId,
+        name: partyName,
+        color: partyColor,
+        votes: partyVotes
+      });
     });
+
   } else if (example) {
     const exampleData = [
       { name: "P1", color: "#e41a1c", votes: 10000 },
@@ -108,20 +135,30 @@ function removeDistrict(id) {
   }
 }
 
-function addPartyRow(tbody) {
+function addPartyRow(tbody, { id = "", name = "", color = getNextColor(), votes = 0 } = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="text" class="party-id w-full border p-1" placeholder="ID" /></td>
-    <td><input type="text" class="party-name w-full border p-1" placeholder="Name" /></td>
-    <td><input type="color" class="party-color w-full" /></td>
-    <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="0" /></td>
-    <td><button type="button" class="remove-party text-red-600">✕</button></td>`;
+    <td>
+      <input type="hidden" class="party-id" value="${id}" />
+      <input type="text" class="party-name w-full border p-1" value="${name}" placeholder="Название партии" />
+    </td>
+    <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="${votes}" /></td>
+    <td><input type="color" class="party-color w-full" value="${color}" /></td>
+    <td><button type="button" class="remove-party text-red-600">✕</button></td>
+  `;
   row.querySelector(".remove-party")?.addEventListener("click", () => row.remove());
   tbody.appendChild(row);
+  syncPartyRegistryFromRow(row);
 }
 
+
 function syncPartyRegistryFromRow(row) {
-  let id = row.querySelector(".party-id")?.value.trim();
+  let idInput = row.querySelector(".party-id");
+  let id = idInput?.value.trim();
+  if (!id) {
+    id = getNextPartyId();
+    if (idInput) idInput.value = id;
+  }
   const nameInput = row.querySelector(".party-name");
   const colorInput = row.querySelector(".party-color");
 
@@ -340,4 +377,19 @@ export function init() {
   qs("#generate-example").addEventListener("click", generateExample);
   qs("#generate").addEventListener("click", () => recalculateAll());
   addDistrict({ emptyParties: true });
+
+    // 🔒 Блокировка scroll и стрелок ↑/↓ на всех number-полях
+  document.addEventListener("wheel", (e) => {
+    if (document.activeElement.type === "number" && document.activeElement === e.target) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener("keydown", (e) => {
+    if (document.activeElement.type === "number" &&
+        (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault();
+    }
+  });
+
 }

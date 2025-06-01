@@ -39,31 +39,36 @@
             <span class="text-sm">Число мандатов</span>
             <input type="number" class="seats w-full border p-1" value="6" min="1" />
           </label>
-          <label class="block">
-            <span class="text-sm">Проходной барьер (%)</span>
-            <input type="number" class="threshold w-full border p-1" value="0" step="any" min="0" max="100" />
-          </label>
-          <label class="block">
-            <span class="text-sm">Разрешение ничьей</span>
-            <select class="tie-break w-full border p-1">
-              <option value="disputed">Disputed</option>
-              <option value="random">Random</option>
-              <option value="largestVotes">Most votes</option>
-              <option value="leastVotes">Least votes</option>
-              <option value="partyIndex">Lowest index</option>
-            </select>
-          </label>
-          <label class="block">
-            <span class="text-sm">Правило переполнения</span>
-            <select class="over-alloc w-full border p-1">
-              <option value="increase">Increase seat count</option>
-              <option value="adjust-quota">Adjust quota</option>
-              <option value="remove-large">Remove from large parties</option>
-              <option value="remove-small">Remove from small parties</option>
-            </select>
-          </label>
         </div>
 
+        <details class="mt-2 bg-slate-100 p-3 rounded border text-sm">
+          <summary class="cursor-pointer font-medium mb-2">Дополнительные настройки</summary>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <label class="block">
+              <span class="text-sm">Проходной барьер (%)</span>
+              <input type="number" class="threshold w-full border p-1" value="0" step="any" min="0" max="100" />
+            </label>
+            <label class="block">
+              <span class="text-sm">Разрешение ничьей</span>
+              <select class="tie-break w-full border p-1">
+                <option value="disputed">Disputed</option>
+                <option value="random">Random</option>
+                <option value="largestVotes">Most votes</option>
+                <option value="leastVotes">Least votes</option>
+                <option value="partyIndex">Lowest index</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-sm">Правило переполнения</span>
+              <select class="over-alloc w-full border p-1">
+                <option value="increase">Increase seat count</option>
+                <option value="adjust-quota">Adjust quota</option>
+                <option value="remove-large">Remove from large parties</option>
+                <option value="remove-small">Remove from small parties</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <div>
           <table class="w-full text-sm border mt-2">
             <thead>
