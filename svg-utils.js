@@ -1,6 +1,32 @@
 // This is a rewritten version of buildSVG from svg-utils_new.js
 // that adopts the seat positioning and layout sizing logic from svg-utils_old.js
 
+export function svgToPng(containerEl, title) {
+  const svgEl = containerEl.querySelector('svg');
+  const clone = svgEl.cloneNode(true);
+
+  // Создаем временный SVG-элемент в строке
+  const svgStr = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = svgEl.viewBox.baseVal.width;
+    canvas.height = svgEl.viewBox.baseVal.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+
+    const a = document.createElement('a');
+    a.download = `${title}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.src = url;
+}
+
 export function buildSVG(cfg) {
   const mount = typeof cfg.mountEl === 'string'
     ? document.querySelector(cfg.mountEl)
@@ -195,6 +221,7 @@ export function buildSVG(cfg) {
   btn.addEventListener('click', () => svgToPng(fig, cfg.title));
   fig.appendChild(btn);
 
+  fig.appendChild(svg);
   mount.appendChild(fig);
   return {figureEl: fig, svgEl: svg, pngButton: btn};
 }
