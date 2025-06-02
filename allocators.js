@@ -197,11 +197,6 @@ export function aggregateNation (districtCfgArray, methodsToRun = Object.values(
       }
     });
   });
-  if (partyId.startsWith("DISPUTED_")) {
-    nationalResults[method]["DISPUTED"] = (nationalResults[method]["DISPUTED"] || 0) + districtSeatsMap[partyId];
-  } else {
-    nationalResults[method][partyId] = (nationalResults[method][partyId] || 0) + districtSeatsMap[partyId];
-  }
   return nationalResults;
 }
 
