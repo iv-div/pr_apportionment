@@ -144,13 +144,14 @@ export function allocateDistrict (district, method, opts = {}) {
   
   // Ensure all parties from the input (even if they got 0 seats) are in the map if they were eligible
   eligiblePartiesInternal.forEach(p => {
-      if (p.partyId !== DISPUTED_PARTY_ID && !(p.name && p.name.startsWith('Disputed Mandates'))) {
-          if (!(p.partyId in seatsMap)) {
-              seatsMap[p.partyId] = 0;
-          }
+    if (!p.partyId.startsWith("DISPUTED_") && !(p.name && p.name.startsWith('Disputed Mandates'))) {
+      if (!(p.partyId in seatsMap)) {
+        seatsMap[p.partyId] = 0;
       }
+    }
   });
-  // If a disputed party was added and got 0 seats, it won't be in map yet.
+
+  // Добавляем нулевые записи для всех спорных партий
   eligiblePartiesInternal
     .filter(p => p.partyId.startsWith("DISPUTED_"))
     .forEach(p => {
@@ -158,8 +159,6 @@ export function allocateDistrict (district, method, opts = {}) {
         seatsMap[p.partyId] = 0;
       }
     });
-
-
 
   return seatsMap;
 }
