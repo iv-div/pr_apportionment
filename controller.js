@@ -413,6 +413,259 @@ function generateExample() {
   addDistrict({ example: true });
 }
 
+function handleCSVUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      const rows = results.data;
+      const districts = new Map();
+      const partyStats = new Map();
+
+      for (const row of rows) {
+        const districtName = row["district_name"]?.trim();
+        const seats = parseInt(row["seats"], 10);
+        const party = row["party"]?.trim();
+        const votes = parseInt(row["votes"], 10);
+
+        if (!districtName || !party || isNaN(seats) || isNaN(votes)) {
+          errors.push(`Строка с данными пропущена из-за некорректных значений: ${JSON.stringify(row)}`);
+          continue;
+        }
+
+        // Инициализируем округ
+        if (!districts.has(districtName)) {
+          districts.set(districtName, {
+            name: districtName,
+            seats: seats,
+            parties: []
+          });
+        }
+
+        const district = districts.get(districtName);
+        if (district.seats !== seats) {
+          errors.push(`Округ "${districtName}" указан с разным числом мандатов: ${district.seats} и ${seats}`);
+          continue;
+        }
+
+        // Добавляем партию в округ
+        district.parties.push({
+          partyId: party,
+          name: party,
+          votes: votes
+        });
+
+        // Считаем общее количество голосов по партиям
+        const stat = partyStats.get(party) || { name: party, totalVotes: 0 };
+        stat.totalVotes += votes;
+        partyStats.set(party, stat);
+      }
+      
+      const errors = [];
+
+      console.log("✅ CSV импортирован:");
+      console.log("Округов:", districts.size);
+      console.log("Партии:", partyStats);
+      if (errors.length > 0) {
+        alert("⚠️ Обнаружены ошибки при загрузке CSV:\n\n" + errors.join("\n"));
+        return;
+      }
+
+      // ➕ здесь будет вызов функции previewImport(districts, partyStats)
+    },
+    error: (err) => {
+      alert("Ошибка при чтении CSV: " + err.message);
+    }
+  });
+
+if (!validateParsedCSV(rows)) return;
+
+previewImport(districts, partyStats);
+
+}
+
+function createDistrictsFromImport(districts, partyStats, globalSettings) {
+  // Очищаем всё
+  districtsContainer.innerHTML = "";
+  districts.clear();
+  partyRegistry.clear();
+  nextPartyNumber = 1;
+  districtCounter = 0;
+  nextColorIndex = 0;
+
+  // Регистрируем партии
+  for (const [id, party] of partyStats.entries()) {
+    partyRegistry.set(id, {
+      name: party.name,
+      color: party.color
+    });
+  }
+
+  // Создаем округа
+  for (const district of districts.values()) {
+    const id = nextDistrictId();
+    const template = qs("#district-template");
+    const districtEl = template.content.firstElementChild.cloneNode(true);
+    districtEl.dataset.districtId = id;
+
+    qs(".district-name", districtEl).value = district.name;
+    qs(".seats", districtEl).value = district.seats;
+    qs(".threshold", districtEl).value = globalSettings.threshold;
+    qs(".tie-break", districtEl).value = globalSettings.tieBreak;
+    qs(".over-alloc", districtEl).value = globalSettings.overAllocRule;
+
+    const tbody = qs("tbody", districtEl);
+    for (const p of district.parties) {
+      addPartyRow(tbody, {
+        id: p.partyId,
+        name: p.name,
+        votes: p.votes,
+        color: partyStats.get(p.partyId)?.color || getNextColor()
+      });
+    }
+
+    // Кнопки управления округом
+    qs(".clone-district", districtEl)?.addEventListener("click", () =>
+      addDistrict({ cloneSourceEl: districtEl })
+    );
+    qs(".remove-district", districtEl)?.addEventListener("click", () =>
+      removeDistrict(id)
+    );
+    qs(".add-party", districtEl)?.addEventListener("click", () =>
+      addPartyRow(tbody)
+    );
+
+    tbody.addEventListener("input", (e) => {
+      const row = e.target.closest("tr");
+      if (!row) return;
+      syncPartyRegistryFromRow(row);
+    });
+
+    districtsContainer.appendChild(districtEl);
+    districts.set(id, { el: districtEl, data: null });
+  }
+}
+
+
+
+function previewImport(districts, partyStats) {
+  const modal = qs("#import-preview");
+  const summary = qs("#import-summary");
+  const partyContainer = qs("#import-parties");
+
+  // Заполняем сводку
+  let totalSeats = 0;
+  for (const d of districts.values()) totalSeats += d.seats;
+
+  summary.innerHTML = `
+    <p><strong>Округов:</strong> ${districts.size}</p>
+    <p><strong>Всего мандатов:</strong> ${totalSeats}</p>
+    <p><strong>Партий:</strong> ${partyStats.size}</p>
+  `;
+
+  // Отрисовываем список партий
+  partyContainer.innerHTML = "";
+  for (const [id, party] of partyStats.entries()) {
+    const color = getNextColor();
+    party.color = color;
+
+    const div = document.createElement("div");
+    div.className = "flex items-center gap-2";
+    div.innerHTML = `
+      <input type="color" class="party-color-picker border" value="${color}" data-party-id="${id}">
+      <span class="flex-1 truncate">${party.name}</span>
+      <span class="text-gray-500 text-xs">(${party.totalVotes} голосов)</span>
+    `;
+    partyContainer.appendChild(div);
+  }
+
+  // Показываем модалку
+  modal.classList.remove("hidden");
+
+  // Кнопки
+  qs("#cancel-import").onclick = () => {
+    modal.classList.add("hidden");
+    qs("#csv-import").value = "";
+  };
+
+  qs("#confirm-import").onclick = () => {
+    const threshold = parseFloat(qs("#import-threshold").value) || 0;
+    const overAllocRule = qs("#import-overalloc").value;
+    const tieBreak = qs("#import-tiebreak").value;
+
+    // Обновим цвета
+    qsa(".party-color-picker").forEach((input) => {
+      const id = input.dataset.partyId;
+      const party = partyStats.get(id);
+      if (party) party.color = input.value;
+    });
+
+    modal.classList.add("hidden");
+    createDistrictsFromImport(districts, partyStats, { threshold, overAllocRule, tieBreak });
+    qs("#csv-import").value = "";
+  };
+}
+
+function validateParsedCSV(rows) {
+  const errors = [];
+  const seatCountByDistrict = new Map();
+  const seenRows = new Set();
+
+  rows.forEach((row, i) => {
+    const line = i + 2; // учитываем заголовок
+
+    const d = row["district_name"]?.trim();
+    const seats = row["seats"];
+    const party = row["party"]?.trim();
+    const votes = row["votes"];
+
+    if (!d || !seats || !party || !votes) {
+      errors.push(`Строка ${line}: отсутствуют обязательные поля.`);
+      return;
+    }
+
+    const seatNum = parseInt(seats, 10);
+    const voteNum = parseInt(votes, 10);
+
+    if (isNaN(seatNum) || seatNum <= 0) {
+      errors.push(`Строка ${line}: некорректное значение мандатов "${seats}".`);
+    }
+
+    if (isNaN(voteNum) || voteNum < 0) {
+      errors.push(`Строка ${line}: некорректное значение голосов "${votes}".`);
+    }
+
+    if (seatCountByDistrict.has(d)) {
+      const prevSeats = seatCountByDistrict.get(d);
+      if (prevSeats !== seatNum) {
+        errors.push(`Округ "${d}" указан с разным числом мандатов (${prevSeats} и ${seatNum}).`);
+      }
+    } else {
+      seatCountByDistrict.set(d, seatNum);
+    }
+
+    // ✅ Проверка на дубликаты строк
+    const rowKey = `${d}|${seatNum}|${party}|${voteNum}`;
+    if (seenRows.has(rowKey)) {
+      errors.push(`Строка ${line}: дубликат строки (округ "${d}", партия "${party}", голоса: ${voteNum})`);
+    } else {
+      seenRows.add(rowKey);
+    }
+  });
+
+  if (errors.length > 0) {
+    alert("Ошибка в CSV:\n\n" + errors.join("\n"));
+    return false;
+  }
+
+  return true;
+}
+
+
+
 export function init() {
   districtsContainer = qs("#districts-container");
   resultsContainer = qs("#results");
@@ -434,5 +687,10 @@ export function init() {
       e.preventDefault();
     }
   });
+  qs("#upload-csv")?.addEventListener("click", () => {
+    qs("#csv-import")?.click();
+  });
+
+  qs("#csv-import")?.addEventListener("change", handleCSVUpload);
 
 }

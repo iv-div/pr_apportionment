@@ -6,6 +6,8 @@
   <title>Многоокружный калькулятор мандатов</title>
   <script type="module" src="./main.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 </head>
 <body class="bg-slate-100 text-slate-700">
   <main class="max-w-4xl mx-auto px-4 py-6">
@@ -21,6 +23,14 @@
       <button id="generate" type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
         Сгенерировать национальную диаграмму
       </button>
+      <a href="/template.csv" download class="text-blue-600 underline text-sm self-center">
+        📄 Скачать шаблон CSV
+      </a>
+      <input type="file" id="csv-import" accept=".csv" class="hidden" />
+      <button type="button" id="upload-csv" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow">
+        📤 Импорт из CSV
+      </button>
+
     </div>
 
     <div id="districts-container" class="space-y-6"></div>
@@ -87,5 +97,47 @@
     </template>
   </main>
 <datalist id="party-suggestions"></datalist>
+
+<div id="import-preview" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <h2 class="text-xl font-semibold">Предпросмотр импорта</h2>
+    <div id="import-summary" class="text-sm"></div>
+
+    <div class="mt-4">
+      <label class="block text-sm font-medium">Проходной барьер (%):</label>
+      <input type="number" id="import-threshold" class="border p-1 w-full" min="0" max="100" step="any" value="0" />
+    </div>
+
+    <div class="mt-2">
+      <label class="block text-sm font-medium">Правило over-allocation:</label>
+      <select id="import-overalloc" class="border p-1 w-full">
+        <option value="increase">Увеличить общее число мандатов</option>
+        <option value="adjust-quota">Изменить квоту</option>
+        <option value="remove-large">Убрать у крупных</option>
+        <option value="remove-small">Убрать у мелких</option>
+      </select>
+    </div>
+
+    <div class="mt-2">
+      <label class="block text-sm font-medium">Правило разрешения ничьей:</label>
+      <select id="import-tiebreak" class="border p-1 w-full">
+        <option value="disputed">Disputed</option>
+        <option value="random">Random</option>
+        <option value="largestVotes">Most votes</option>
+        <option value="leastVotes">Least votes</option>
+        <option value="partyIndex">Lowest index</option>
+      </select>
+    </div>
+
+    <h3 class="text-sm font-semibold mt-4">Партии:</h3>
+    <div id="import-parties" class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm"></div>
+
+    <div class="flex justify-end gap-4 mt-6">
+      <button id="cancel-import" class="text-gray-600 hover:underline">Отмена</button>
+      <button id="confirm-import" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Импортировать</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
