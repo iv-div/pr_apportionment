@@ -178,8 +178,18 @@ export function buildSVG(cfg) {
   let legY = titleHeight;
   const legX = canvasWidth - legendWidth + 10;
 
+  let displayName = row.name;
+  if (!cfg.isNational && row.name.startsWith("DISPUTED_")) {
+    const ids = row.name.slice(9).split('_');
+    const names = ids.map(id => cfg.partyIdToNameMap?.[id] || id);
+    displayName = `Спорные мандаты: (${names.join(', ')})`;
+  } else if (cfg.isNational && row.name.startsWith("DISPUTED_")) {
+    displayName = "Спорные мандаты";
+  }
+
+
   cfg.legendRows.forEach(row => {
-    const lines = [`${row.name}`, `Голоса: ${row.votePct.toFixed(1)}%`, `Мандаты: ${row.seatPct.toFixed(1)}% (${row.seats})`];
+    const lines = [displayName, `Голоса: ${row.votePct.toFixed(1)}%`, `Мандаты: ${row.seatPct.toFixed(1)}% (${row.seats})`];
     lines.forEach((line, i) => {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', legX + 20);

@@ -36,7 +36,11 @@ export const PR_METHODS = Object.freeze({
   SAINT_LAGUE: 'saintelague'
 });
 
-const DISPUTED_PARTY_ID = 'DISPUTED'; // Standardized ID for disputed seats
+function generateDisputedId(candidates) {
+  const ids = candidates.map(c => c.partyId).sort();
+  return `DISPUTED_${ids.join('_')}`;
+}
+
 
 // ---------------------------
 // Main public API
@@ -184,7 +188,11 @@ export function aggregateNation (districtCfgArray, methodsToRun = Object.values(
       }
     });
   });
-
+  if (partyId.startsWith("DISPUTED_")) {
+    nationalResults[method]["DISPUTED"] = (nationalResults[method]["DISPUTED"] || 0) + districtSeatsMap[partyId];
+  } else {
+    nationalResults[method][partyId] = (nationalResults[method][partyId] || 0) + districtSeatsMap[partyId];
+  }
   return nationalResults;
 }
 
@@ -234,14 +242,15 @@ function applyTieBreakInternal(candidates, seatsToAward, rule, currentMethodPart
   if (rule === 'disputed') {
     // `mandates.js` creates a descriptive name. Here, we'll use a standard DISPUTED_PARTY_ID.
     // We need to add this "Disputed" party to `currentMethodParties` if it doesn't exist.
-    let disputedPartyEntry = currentMethodParties.find(p => p.partyId === DISPUTED_PARTY_ID);
+    const disputedId = generateDisputedId(candidates);
+    let disputedPartyEntry = currentMethodParties.find(p => p.partyId === disputedId);
     let disputedPartyIdx;
 
     if (!disputedPartyEntry) {
       disputedPartyIdx = currentMethodParties.length;
       currentMethodParties.push({
-        partyId: DISPUTED_PARTY_ID,
-        name: DISPUTED_PARTY_ID, // For consistency if name is used
+        partyId: disputedId,
+        name: disputedId, // For consistency if name is used
         votes: 0,
         color: '#D1D5DB', // Default color for disputed
         originalIndex: -1, // Indicates a synthetic party

@@ -330,7 +330,8 @@ function recalculateAll() {
       title: `${methodLabel(method)} — national parliament`,
       seatMap: allocationArr,
       legendRows: legendArr,
-      totalSeats: actualTotalSeats
+      totalSeats: actualTotalSeats,
+      isNational: true
     });
 
     // Создаем общий раскрывающийся блок для всех округов по текущему методу
@@ -382,7 +383,11 @@ function recalculateAll() {
         title: `${methodLabel(method)} — ${district.name}`,
         seatMap: allocationArr,
         legendRows,
-        totalSeats: totalDistrictSeats
+        totalSeats: totalDistrictSeats,
+        isNational: false,
+        partyIdToNameMap: Object.fromEntries(
+          district.parties.map(p => [p.partyId, p.name])
+        )
       });
 
       methodWrapper.appendChild(wrapper);
