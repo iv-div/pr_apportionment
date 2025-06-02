@@ -287,7 +287,6 @@ function recalculateAll() {
     totalSeats += d.seats;
   });
   
-  renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats });
 
   METHODS.forEach((method) => {
     const mTotals = new Map();
@@ -300,6 +299,8 @@ function recalculateAll() {
     });
     nationalSeats.set(method, mTotals);
   });
+  
+  renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats });
 
   METHODS.forEach((method) => {
     const mount = document.createElement("div");
