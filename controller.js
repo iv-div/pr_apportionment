@@ -289,16 +289,34 @@ function recalculateAll() {
   
 
   METHODS.forEach((method) => {
-    const mTotals = new Map();
+    const rawTotals = new Map();
+
     parsedDistricts.forEach((d) => {
       const allocation = allocateDistrict(d, method, { overAllocRule: d.overAllocRule });
       for (const [partyId, seats] of Object.entries(allocation)) {
-        const prev = mTotals.get(partyId) || 0;
-        mTotals.set(partyId, prev + seats);
+        const prev = rawTotals.get(partyId) || 0;
+        rawTotals.set(partyId, prev + seats);
       }
     });
+
+    // 🔧 Объединяем DISPUTED_... в одну DISPUTED
+    const mTotals = new Map();
+    for (const [partyId, seats] of rawTotals.entries()) {
+      const key = partyId.startsWith("DISPUTED_") ? "DISPUTED" : partyId;
+      mTotals.set(key, (mTotals.get(key) || 0) + seats);
+    }
+
+    // ✅ Регистрируем для визуализации
+    if (mTotals.has("DISPUTED")) {
+      partyRegistry.set("DISPUTED", {
+        name: "Спорные мандаты",
+        color: "#D1D5DB"
+      });
+    }
+
     nationalSeats.set(method, mTotals);
   });
+
   
   renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats });
 
