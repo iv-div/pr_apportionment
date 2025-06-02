@@ -95,18 +95,14 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
       { name: "P5", color: "#ff7f00", votes: 1000 },
     ];
     exampleData.forEach(p => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input type="text" class="party-id w-full border p-1" value="${p.name}" /></td>
-        <td><input type="text" class="party-name w-full border p-1" value="${p.name}" /></td>
-        <td><input type="color" class="party-color w-full" value="${p.color}" /></td>
-        <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="${p.votes}" /></td>
-        <td><button type="button" class="remove-party text-red-600">✕</button></td>
-      `;
-      row.querySelector(".remove-party")?.addEventListener("click", () => row.remove());
-      partyTbody.appendChild(row);
-      syncPartyRegistryFromRow(row);
+      addPartyRow(partyTbody, {
+        id: p.name,
+        name: p.name,
+        color: p.color,
+        votes: p.votes
+      });
     });
+
   } else if (emptyParties) {
     for (let i = 0; i < 5; i++) {
       addPartyRow(partyTbody);
@@ -140,7 +136,7 @@ function addPartyRow(tbody, { id = "", name = "", color = getNextColor(), votes 
   row.innerHTML = `
     <td>
       <input type="hidden" class="party-id" value="${id}" />
-      <input type="text" class="party-name w-full border p-1" value="${name}" placeholder="Название партии" />
+      <input type="text" class="party-name w-full border p-1" value="${name}" placeholder="Название партии" list="party-suggestions" />
     </td>
     <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="${votes}" /></td>
     <td><input type="color" class="party-color w-full" value="${color}" /></td>
@@ -153,35 +149,71 @@ function addPartyRow(tbody, { id = "", name = "", color = getNextColor(), votes 
 
 
 function syncPartyRegistryFromRow(row) {
-  let idInput = row.querySelector(".party-id");
+  const idInput = row.querySelector(".party-id");
+  const nameInput = row.querySelector(".party-name");
+  const colorInput = row.querySelector(".party-color");
+
   let id = idInput?.value.trim();
+  const typedName = nameInput?.value.trim();
+
+  // Если ID ещё не задан, ищем по имени
+  if (!id && typedName) {
+    for (const [existingId, data] of partyRegistry.entries()) {
+      if (data.name === typedName) {
+        id = existingId;
+        if (idInput) idInput.value = id;
+        // Подставляем существующий цвет
+        if (colorInput) colorInput.value = data.color;
+        break;
+      }
+    }
+  }
+
+  // Если всё ещё нет ID — создаём новый
   if (!id) {
     id = getNextPartyId();
     if (idInput) idInput.value = id;
   }
-  const nameInput = row.querySelector(".party-name");
-  const colorInput = row.querySelector(".party-color");
 
-  if (!id) {
-    id = getNextPartyId();
-    row.querySelector(".party-id").value = id;
-  }
-
-  const name = nameInput?.value.trim() || id;
+  const name = typedName || id;
   const color = colorInput?.value || "#888888";
+
   const existing = partyRegistry.get(id) || {};
   const changed = existing.name !== name || existing.color !== color;
+
   if (changed) {
     partyRegistry.set(id, { name, color });
+
+    // Обновляем все строки с таким же ID
     qsa("tr").forEach((r) => {
       const pidInput = r.querySelector(".party-id");
       if (pidInput && pidInput.value.trim() === id && r !== row) {
-        r.querySelector(".party-name").value = name;
-        r.querySelector(".party-color").value = color;
+        const nameField = r.querySelector(".party-name");
+        const colorField = r.querySelector(".party-color");
+        if (nameField) nameField.value = name;
+        if (colorField) colorField.value = color;
       }
     });
   }
+
+  updatePartySuggestions();
 }
+
+function updatePartySuggestions() {
+  const datalist = document.getElementById("party-suggestions");
+  if (!datalist) return;
+
+  // Удалим старые опции
+  datalist.innerHTML = "";
+
+  for (const { name } of partyRegistry.values()) {
+    if (!name) continue;
+    const option = document.createElement("option");
+    option.value = name;
+    datalist.appendChild(option);
+  }
+}
+
 
 function parseDistrict(record) {
   const el = record.el;
