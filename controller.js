@@ -143,6 +143,17 @@ function addPartyRow(tbody, { id = "", name = "", color = getNextColor(), votes 
     <td><button type="button" class="remove-party text-red-600">✕</button></td>
   `;
   row.querySelector(".remove-party")?.addEventListener("click", () => row.remove());
+  const nameInput = row.querySelector(".party-name");
+  nameInput?.addEventListener("change", () => {
+    const name = nameInput.value.trim();
+    for (const [existingId, data] of partyRegistry.entries()) {
+      if (data.name === name) {
+        row.querySelector(".party-id").value = existingId;
+        row.querySelector(".party-color").value = data.color;
+        break;
+      }
+    }
+  });
   tbody.appendChild(row);
   syncPartyRegistryFromRow(row);
 }
