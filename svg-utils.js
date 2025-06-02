@@ -34,12 +34,12 @@ export function buildSVG(cfg) {
   if (!mount) throw new Error('mountEl not found');
 
   const total = cfg.totalSeats;
-  const canvasWidth = 1000;
+  const canvasWidth = 1250;
   const canvasHeight = 600;
 
   const titleHeight = 60;
   const bottomPadding = 40;
-  const legendWidth = 250;
+  const legendWidth = 500;
   const leftPadding = 40;
 
   const plotAreaLeft = leftPadding;
@@ -63,6 +63,16 @@ export function buildSVG(cfg) {
   svg.setAttribute('width', canvasWidth);
   svg.setAttribute('height', canvasHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+  const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  background.setAttribute('x', 0);
+  background.setAttribute('y', 0);
+  background.setAttribute('width', canvasWidth);
+  background.setAttribute('height', canvasHeight);
+  background.setAttribute('fill', 'white');
+  svg.appendChild(background);
+
+
 
   const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   titleText.setAttribute('x', canvasWidth / 2);
