@@ -134,8 +134,8 @@ export function allocateDistrict (district, method, opts = {}) {
         // This branch might be redundant if applyTieBreak correctly sets partyId.
         seatsMap[DISPUTED_PARTY_ID] = (seatsMap[DISPUTED_PARTY_ID] || 0) + seats;
 
-      } else if (partyInfo.partyId === DISPUTED_PARTY_ID || (partyInfo.name && partyInfo.name.startsWith('Disputed Mandates'))) {
-         seatsMap[DISPUTED_PARTY_ID] = (seatsMap[DISPUTED_PARTY_ID] || 0) + seats;
+      } else if (partyInfo.partyId.startsWith('DISPUTED_')) {
+                seatsMap[partyInfo.partyId] = (seatsMap[partyInfo.partyId] || 0) + seats;
       } else {
          seatsMap[partyInfo.partyId] = (seatsMap[partyInfo.partyId] || 0) + seats;
       }
@@ -151,9 +151,14 @@ export function allocateDistrict (district, method, opts = {}) {
       }
   });
   // If a disputed party was added and got 0 seats, it won't be in map yet.
-  if (eligiblePartiesInternal.some(p => p.partyId === DISPUTED_PARTY_ID) && !(DISPUTED_PARTY_ID in seatsMap)) {
-      seatsMap[DISPUTED_PARTY_ID] = 0;
-  }
+  eligiblePartiesInternal
+    .filter(p => p.partyId.startsWith("DISPUTED_"))
+    .forEach(p => {
+      if (!(p.partyId in seatsMap)) {
+        seatsMap[p.partyId] = 0;
+      }
+    });
+
 
 
   return seatsMap;
