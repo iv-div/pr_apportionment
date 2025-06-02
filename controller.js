@@ -286,6 +286,8 @@ function recalculateAll() {
     });
     totalSeats += d.seats;
   });
+  
+  renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats });
 
   METHODS.forEach((method) => {
     const mTotals = new Map();
@@ -400,6 +402,59 @@ function recalculateAll() {
 
   });
 }
+
+function renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats }) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "overflow-x-auto mb-6";
+
+  const table = document.createElement("table");
+  table.className = "min-w-full border-collapse border border-gray-400 text-sm";
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr class="bg-slate-200">
+      <th class="border border-gray-400 px-2 py-1 text-left">Партия</th>
+      <th class="border border-gray-400 px-2 py-1 text-right">Голоса (%)</th>
+      ${METHODS.map(m => `<th class="border border-gray-400 px-2 py-1 text-right">${methodLabel(m)}</th>`).join('')}
+    </tr>`;
+  table.appendChild(thead);
+
+  // Собираем список всех партий, включая "DISPUTED"
+  const allPartyIds = new Set();
+  METHODS.forEach(method => {
+    const mTotals = nationalSeats.get(method);
+    mTotals.forEach((_, partyId) => allPartyIds.add(partyId));
+  });
+
+  const rows = [];
+  for (const partyId of allPartyIds) {
+    const party = partyRegistry.get(partyId) || { name: partyId, color: "#888888" };
+    const votes = nationalVotes.get(partyId) || 0;
+    const votePct = totalVotes ? ((votes / totalVotes) * 100).toFixed(1) : "0.0";
+
+    const methodCells = METHODS.map(method => {
+      const seats = nationalSeats.get(method).get(partyId) || 0;
+      const pct = totalSeats ? ((seats / totalSeats) * 100).toFixed(1) : "0.0";
+      return `<td class="border border-gray-400 px-2 py-1 text-right">${seats} (${pct}%)</td>`;
+    }).join("");
+
+    const row = `
+      <tr>
+        <td class="border border-gray-400 px-2 py-1" style="color: ${party.color}">${party.name}</td>
+        <td class="border border-gray-400 px-2 py-1 text-right">${votePct}%</td>
+        ${methodCells}
+      </tr>`;
+    rows.push(row);
+  }
+
+  const tbody = document.createElement("tbody");
+  tbody.innerHTML = rows.join("");
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  resultsContainer.appendChild(wrapper);
+}
+
+
 
 function methodLabel(method) {
   switch (method) {

@@ -188,7 +188,12 @@ export function aggregateNation (districtCfgArray, methodsToRun = Object.values(
       
       // Aggregate into national results
       for (const partyId in districtSeatsMap) {
-        nationalResults[method][partyId] = (nationalResults[method][partyId] || 0) + districtSeatsMap[partyId];
+        const seats = districtSeatsMap[partyId];
+        if (partyId.startsWith("DISPUTED_")) {
+          nationalResults[method]["DISPUTED"] = (nationalResults[method]["DISPUTED"] || 0) + seats;
+        } else {
+          nationalResults[method][partyId] = (nationalResults[method][partyId] || 0) + seats;
+        }
       }
     });
   });

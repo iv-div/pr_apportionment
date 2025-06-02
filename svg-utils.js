@@ -191,8 +191,7 @@ export function buildSVG(cfg) {
 
     const lines = [
       displayName,
-      `Голоса: ${row.votePct.toFixed(1)}%`,
-      `Мандаты: ${row.seatPct.toFixed(1)}% (${row.seats})`
+      `Мандаты: ${row.seats}`
     ];
     lines.forEach((line, i) => {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -233,8 +232,7 @@ export function buildSVG(cfg) {
       <td class="py-0.5">
         <span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:${row.color}"></span>${nameHtml}
       </td>
-      <td class="text-right">${row.votePct.toFixed(1)}</td>
-      <td class="text-right font-medium">${row.seatPct.toFixed(1)}</td>`;
+      <td class="text-right font-medium" colspan="2">${row.seats}</td>
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
