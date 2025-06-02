@@ -482,8 +482,8 @@ function handleCSVUpload(event) {
 }
 
 
-function createDistrictsFromImport(districts, partyStats, globalSettings) {
-  // Очищаем всё
+function createDistrictsFromImport(importedDistricts, partyStats, globalSettings) {
+  // Очищаем интерфейс и состояние
   districtsContainer.innerHTML = "";
   districts.clear();
   partyRegistry.clear();
@@ -500,20 +500,20 @@ function createDistrictsFromImport(districts, partyStats, globalSettings) {
   }
 
   // Создаем округа
-  for (const district of districts.values()) {
+  for (const imported of importedDistricts.values()) {
     const id = nextDistrictId();
     const template = qs("#district-template");
     const districtEl = template.content.firstElementChild.cloneNode(true);
     districtEl.dataset.districtId = id;
 
-    qs(".district-name", districtEl).value = district.name;
-    qs(".seats", districtEl).value = district.seats;
+    qs(".district-name", districtEl).value = imported.name;
+    qs(".seats", districtEl).value = imported.seats;
     qs(".threshold", districtEl).value = globalSettings.threshold;
     qs(".tie-break", districtEl).value = globalSettings.tieBreak;
     qs(".over-alloc", districtEl).value = globalSettings.overAllocRule;
 
     const tbody = qs("tbody", districtEl);
-    for (const p of district.parties) {
+    for (const p of imported.parties) {
       addPartyRow(tbody, {
         id: p.partyId,
         name: p.name,
@@ -522,7 +522,6 @@ function createDistrictsFromImport(districts, partyStats, globalSettings) {
       });
     }
 
-    // Кнопки управления округом
     qs(".clone-district", districtEl)?.addEventListener("click", () =>
       addDistrict({ cloneSourceEl: districtEl })
     );
@@ -543,6 +542,7 @@ function createDistrictsFromImport(districts, partyStats, globalSettings) {
     districts.set(id, { el: districtEl, data: null });
   }
 }
+
 
 
 
