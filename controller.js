@@ -422,8 +422,13 @@ function handleCSVUpload(event) {
     skipEmptyLines: true,
     complete: (results) => {
       const rows = results.data;
+
+      // ✅ Сначала валидация
+      if (!validateParsedCSV(rows)) return;
+
       const districts = new Map();
       const partyStats = new Map();
+      const errors = [];
 
       for (const row of rows) {
         const districtName = row["district_name"]?.trim();
@@ -436,7 +441,6 @@ function handleCSVUpload(event) {
           continue;
         }
 
-        // Инициализируем округ
         if (!districts.has(districtName)) {
           districts.set(districtName, {
             name: districtName,
@@ -451,41 +455,32 @@ function handleCSVUpload(event) {
           continue;
         }
 
-        // Добавляем партию в округ
         district.parties.push({
           partyId: party,
           name: party,
           votes: votes
         });
 
-        // Считаем общее количество голосов по партиям
         const stat = partyStats.get(party) || { name: party, totalVotes: 0 };
         stat.totalVotes += votes;
         partyStats.set(party, stat);
       }
-      
-      const errors = [];
 
-      console.log("✅ CSV импортирован:");
-      console.log("Округов:", districts.size);
-      console.log("Партии:", partyStats);
       if (errors.length > 0) {
         alert("⚠️ Обнаружены ошибки при загрузке CSV:\n\n" + errors.join("\n"));
         return;
       }
 
-      // ➕ здесь будет вызов функции previewImport(districts, partyStats)
+      // ✅ Показываем предпросмотр
+      previewImport(districts, partyStats);
     },
+
     error: (err) => {
       alert("Ошибка при чтении CSV: " + err.message);
     }
   });
-
-if (!validateParsedCSV(rows)) return;
-
-previewImport(districts, partyStats);
-
 }
+
 
 function createDistrictsFromImport(districts, partyStats, globalSettings) {
   // Очищаем всё
