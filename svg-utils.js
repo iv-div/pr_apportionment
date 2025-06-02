@@ -233,6 +233,7 @@ export function buildSVG(cfg) {
         <span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:${row.color}"></span>${nameHtml}
       </td>
       <td class="text-right font-medium" colspan="2">${row.seats}</td>
+    `;
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
