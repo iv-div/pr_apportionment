@@ -11,6 +11,9 @@ const districts = new Map();
 const partyRegistry = new Map();
 let districtCounter = 0;
 let nextPartyNumber = 1;
+let currentModalClone = null;
+let currentModalRecord = null;
+
 
 const COLOR_PALETTE = [
   "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
@@ -143,6 +146,9 @@ function renderDistrictsView() {
       record.data = null;
     }
   });
+  districtsContainer.className = isCompactView
+    ? "grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+    : "flex flex-col gap-4";
 
   districtsContainer.innerHTML = "";
   districts.forEach((record) => {
@@ -191,23 +197,29 @@ function openDistrictModal(record) {
   const clone = record.el.cloneNode(true);
   const tbody = qs("tbody", clone);
 
+  // обработка событий
   qsa(".add-party", clone).forEach(btn =>
     btn.addEventListener("click", () => addPartyRow(tbody))
   );
   qsa(".remove-district", clone).forEach(btn =>
-    btn.addEventListener("click", () => removeDistrict(record.el.dataset.districtId))
+    btn.addEventListener("click", () => {
+      removeDistrict(record.el.dataset.districtId);
+      closeDistrictModal();
+    })
   );
   qsa(".clone-district", clone).forEach(btn =>
     btn.addEventListener("click", () => addDistrict({ cloneSourceEl: record.el }))
   );
-
   tbody.addEventListener("input", (e) => {
     const row = e.target.closest("tr");
     if (row) syncPartyRegistryFromRow(row);
   });
 
   content.appendChild(clone);
-  modal.classList.remove("hidden");
+
+  // сохраняем клон в переменную
+  currentModalClone = clone;
+  currentModalRecord = record;
 }
 
 
@@ -515,6 +527,9 @@ function recalculateAll() {
 
   });
 }
+
+
+
 
 function renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes, totalSeats }) {
   const wrapper = document.createElement("div");
@@ -866,5 +881,35 @@ export function init() {
     renderDistrictsView();
   });
 
+function closeDistrictModal() {
+  const modal = document.getElementById("district-modal");
+  modal.classList.add("hidden");
+  currentModalClone = null;
+  currentModalRecord = null;
+}
+
+qs("#close-modal").addEventListener("click", closeDistrictModal);
+
+qs("#confirm-modal").addEventListener("click", () => {
+  if (!currentModalClone || !currentModalRecord) return;
+
+  const orig = currentModalRecord.el;
+  const updated = currentModalClone;
+
+  // переносим содержимое (включая значения input) из клона обратно в оригинал
+  orig.innerHTML = updated.innerHTML;
+
+  // повторно назначаем все события, как будто округ был только что создан
+  bindDistrictEvents(currentModalRecord);
+
+  // пересчитываем данные
+  try {
+    currentModalRecord.data = parseDistrict(currentModalRecord);
+  } catch (e) {
+    console.warn("Invalid district after modal edit:", e);
+  }
+
+  closeDistrictModal();
+});
 
 }

@@ -37,7 +37,7 @@
 
     </div>
 
-    <div id="districts-container" class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
+    <div id="districts-container">
     <div id="results" class="mt-8"></div>
 
     <template id="district-template">
@@ -147,6 +147,12 @@
   <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
     <button id="close-modal" class="absolute top-2 right-3 text-xl text-gray-600 hover:text-black">✕</button>
     <div id="district-modal-content"></div>
+    <div class="mt-4 text-right">
+      <button id="confirm-modal" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+        ✅ ОК
+      </button>
+    </div>
+
   </div>
 </div>
 
