@@ -135,6 +135,10 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
 
   districts.set(id, { el: districtEl, data: null });
   renderDistrictsView();
+  if (isCompactView) {
+    openDistrictModal(districts.get(id));
+  }
+
 }
 
 function renderDistrictsView() {
@@ -220,6 +224,8 @@ function openDistrictModal(record) {
   // сохраняем клон в переменную
   currentModalClone = clone;
   currentModalRecord = record;
+  document.getElementById("district-modal").classList.remove("hidden");
+
 }
 
 
