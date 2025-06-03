@@ -1,6 +1,8 @@
 // csv-import.js
 import { addPartyRow } from './district-manager.js';
 import { qs } from './ui-utils.js';
+import { createDistrictsFromImport } from './district-manager.js';
+
 
 export function setupCSVImport() {
   const uploadBtn = document.getElementById("upload-csv");

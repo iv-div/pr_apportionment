@@ -105,6 +105,12 @@ export function addPartyRow(tbody, { id = "", name = "", color = getNextColor(),
   });
 
   tbody.appendChild(row);
+  row.querySelectorAll('input[type=number]').forEach(input => {
+    input.addEventListener("wheel", e => e.preventDefault());
+    input.addEventListener("keydown", e => {
+      if (["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+    });
+  });
   syncPartyRegistryFromRow(row);
 }
 

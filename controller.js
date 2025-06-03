@@ -130,6 +130,64 @@ export function recalculateAll() {
       totalSeats,
       isNational: true
     });
+
+    const methodWrapper = document.createElement("details");
+    methodWrapper.className = "mb-6 border rounded p-3 bg-gray-50";
+    methodWrapper.open = false;
+
+    const methodSummary = document.createElement("summary");
+    methodSummary.className = "cursor-pointer font-bold";
+    methodSummary.textContent = `Диаграммы по округам — метод ${methodLabel(method)}`;
+    methodWrapper.appendChild(methodSummary);
+
+    parsedDistricts.forEach(district => {
+      const allocation = allocateDistrict(district, method, { overAllocRule: district.overAllocRule });
+
+      const allocationArr = Object.entries(allocation).map(([partyId, seats]) => ({
+        partyId,
+        seats,
+        color: (partyRegistry.get(partyId) || {}).color || "#888888"
+      })).sort((a, b) => b.seats - a.seats);
+
+      const totalDistrictSeats = allocationArr.reduce((sum, p) => sum + p.seats, 0);
+      const totalDistrictVotes = district.parties.reduce((sum, p) => sum + p.votes, 0);
+
+      const legendRows = allocationArr.map(({ partyId, seats, color }) => {
+        const partyData = partyRegistry.get(partyId) || { name: partyId };
+        const partyVotes = district.parties.find(p => p.partyId === partyId)?.votes || 0;
+        return {
+          name: partyData.name,
+          color,
+          votePct: (partyVotes / totalDistrictVotes) * 100,
+          seatPct: (seats / totalDistrictSeats) * 100,
+          seats
+        };
+      });
+
+      const wrapper = document.createElement("details");
+      wrapper.className = "mb-4 border rounded p-2 bg-white";
+
+      const summary = document.createElement("summary");
+      summary.className = "cursor-pointer font-semibold";
+      summary.textContent = `Округ: ${district.name}`;
+      wrapper.appendChild(summary);
+
+      const mount = document.createElement("div");
+      wrapper.appendChild(mount);
+      buildSVG({
+        mountEl: mount,
+        title: `${methodLabel(method)} — ${district.name}`,
+        seatMap: allocationArr,
+        legendRows,
+        totalSeats: totalDistrictSeats,
+        isNational: false,
+        partyIdToNameMap: Object.fromEntries(district.parties.map(p => [p.partyId, p.name]))
+      });
+
+      methodWrapper.appendChild(wrapper);
+    });
+
+    qs("#results").appendChild(methodWrapper);
   });
 }
 
