@@ -74,7 +74,14 @@ export function recalculateAll() {
     const rawTotals = new Map();
 
     parsedDistricts.forEach(d => {
+      const before = JSON.stringify(d);
       const allocation = allocateDistrict(d, method, { overAllocRule: d.overAllocRule });
+      const after = JSON.stringify(d);
+      if (before !== after) {
+        console.warn("District was mutated by allocation function!", d.name);
+      }
+
+
       for (const [partyId, seats] of Object.entries(allocation)) {
         rawTotals.set(partyId, (rawTotals.get(partyId) || 0) + seats);
       }
