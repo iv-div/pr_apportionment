@@ -118,6 +118,15 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
     const row = e.target.closest("tr");
     if (!row) return;
     syncPartyRegistryFromRow(row);
+    const record = districts.get(id);
+    if (record) {
+      try {
+        record.data = parseDistrict(record);
+      } catch (e) {
+        // ничего, пока округ невалидный
+      }
+    }
+
   });
 
 
@@ -126,14 +135,24 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
 }
 
 function renderDistrictsView() {
+  districts.forEach((record, id) => {
+    try {
+      record.data = parseDistrict(record);
+    } catch (e) {
+      // округ пока невалидный — можно не показывать
+      record.data = null;
+    }
+  });
+
   districtsContainer.innerHTML = "";
   districts.forEach((record) => {
-    if (isCompactView) {
+    if (isCompactView && record.data) {
       const card = renderDistrictCompact(record);
       districtsContainer.appendChild(card);
-    } else {
+    } else if (!isCompactView) {
       districtsContainer.appendChild(record.el);
     }
+
   });
 }
 
@@ -167,10 +186,30 @@ function openDistrictModal(record) {
   const content = document.getElementById("district-modal-content");
 
   content.innerHTML = "";
-  content.appendChild(record.el.cloneNode(true));
 
+  // создаём клон, но "реактивно" пересвязываем события
+  const clone = record.el.cloneNode(true);
+  const tbody = qs("tbody", clone);
+
+  qsa(".add-party", clone).forEach(btn =>
+    btn.addEventListener("click", () => addPartyRow(tbody))
+  );
+  qsa(".remove-district", clone).forEach(btn =>
+    btn.addEventListener("click", () => removeDistrict(record.el.dataset.districtId))
+  );
+  qsa(".clone-district", clone).forEach(btn =>
+    btn.addEventListener("click", () => addDistrict({ cloneSourceEl: record.el }))
+  );
+
+  tbody.addEventListener("input", (e) => {
+    const row = e.target.closest("tr");
+    if (row) syncPartyRegistryFromRow(row);
+  });
+
+  content.appendChild(clone);
   modal.classList.remove("hidden");
 }
+
 
 document.getElementById("close-modal").addEventListener("click", () => {
   document.getElementById("district-modal").classList.add("hidden");
