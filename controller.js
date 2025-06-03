@@ -5,6 +5,7 @@ const METHODS = Object.values(PR_METHODS);
 
 const MAX_DISTRICTS = 650;
 let districtsContainer;
+let isCompactView = false;
 let resultsContainer;
 const districts = new Map();
 const partyRegistry = new Map();
@@ -119,9 +120,65 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
     syncPartyRegistryFromRow(row);
   });
 
-  districtsContainer.appendChild(districtEl);
+  record.el = districtEl;
+  districts.set(id, record);
+  renderDistrictsView();
+
   districts.set(id, { el: districtEl, data: null });
 }
+
+function renderDistrictsView() {
+  districtsContainer.innerHTML = "";
+  districts.forEach((record) => {
+    if (isCompactView) {
+      const card = renderDistrictCompact(record);
+      districtsContainer.appendChild(card);
+    } else {
+      districtsContainer.appendChild(record.el);
+    }
+  });
+}
+
+function renderDistrictCompact(record) {
+  const data = record.data || parseDistrict(record); // на случай если данные не сохранены
+  const topParties = [...data.parties]
+    .sort((a, b) => b.votes - a.votes)
+    .slice(0, 5);
+  const maxVotes = topParties[0]?.votes || 1;
+
+  const card = document.createElement("div");
+  card.className = "district-card border p-4 rounded bg-white shadow hover:shadow-md transition cursor-pointer space-y-2";
+  card.innerHTML = `
+    <div class="font-bold text-lg">${data.name}</div>
+    <div class="text-sm text-gray-600">Мандатов: ${data.seats}</div>
+    <div class="flex items-end gap-1 h-16">
+      ${topParties.map(p => {
+        const height = Math.round((p.votes / maxVotes) * 100);
+        const color = (partyRegistry.get(p.partyId)?.color || "#888");
+        return `<div title="${p.name}: ${p.votes} голосов" style="height: ${height}%; background: ${color}" class="w-4 rounded-sm"></div>`;
+      }).join('')}
+    </div>
+  `;
+
+  card.addEventListener("click", () => openDistrictModal(record));
+  return card;
+}
+
+function openDistrictModal(record) {
+  const modal = document.getElementById("district-modal");
+  const content = document.getElementById("district-modal-content");
+
+  content.innerHTML = "";
+  content.appendChild(record.el.cloneNode(true));
+
+  modal.classList.remove("hidden");
+}
+
+document.getElementById("close-modal").addEventListener("click", () => {
+  document.getElementById("district-modal").classList.add("hidden");
+});
+
+
 
 function removeDistrict(id) {
   const record = districts.get(id);
@@ -766,5 +823,11 @@ export function init() {
   });
 
   qs("#csv-import")?.addEventListener("change", handleCSVUpload);
+
+  document.getElementById("toggle-compact-view").addEventListener("change", (e) => {
+    isCompactView = e.target.checked;
+    renderDistrictsView();
+  });
+
 
 }

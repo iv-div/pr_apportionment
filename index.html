@@ -30,6 +30,10 @@
       <button type="button" id="upload-csv" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow">
         📤 Импорт из CSV
       </button>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" id="toggle-compact-view" class="accent-blue-600" />
+        <span class="text-sm">Компактный вид</span>
+      </label>
 
     </div>
 
@@ -136,6 +140,13 @@
       <button id="cancel-import" class="text-gray-600 hover:underline">Отмена</button>
       <button id="confirm-import" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Импортировать</button>
     </div>
+  </div>
+</div>
+
+<div id="district-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+    <button id="close-modal" class="absolute top-2 right-3 text-xl text-gray-600 hover:text-black">✕</button>
+    <div id="district-modal-content"></div>
   </div>
 </div>
 
