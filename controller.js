@@ -120,11 +120,9 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
     syncPartyRegistryFromRow(row);
   });
 
-  record.el = districtEl;
-  districts.set(id, record);
-  renderDistrictsView();
 
   districts.set(id, { el: districtEl, data: null });
+  renderDistrictsView();
 }
 
 function renderDistrictsView() {
