@@ -209,10 +209,16 @@ function openDistrictModal(record) {
     btn.addEventListener("click", () => {
       removeDistrict(record.el.dataset.districtId);
       closeDistrictModal();
+      renderDistrictsView();
     })
   );
+
   qsa(".clone-district", clone).forEach(btn =>
-    btn.addEventListener("click", () => addDistrict({ cloneSourceEl: record.el }))
+    btn.addEventListener("click", () => {
+      addDistrict({ cloneSourceEl: record.el });
+      closeDistrictModal();
+      renderDistrictsView();
+    })
   );
   tbody.addEventListener("input", (e) => {
     const row = e.target.closest("tr");
@@ -226,13 +232,35 @@ function openDistrictModal(record) {
   currentModalRecord = record;
   document.getElementById("district-modal").classList.remove("hidden");
 
+
+  const okButton = document.createElement("button");
+  okButton.textContent = "OK";
+  okButton.className = "mt-4 bg-blue-600 text-white px-4 py-2 rounded";
+  okButton.addEventListener("click", () => {
+    try {
+      const updatedData = parseDistrict({ el: currentModalClone });
+      record.el = currentModalClone; // сохранить отредактированный DOM
+      record.data = updatedData;
+      closeDistrictModal();
+      renderDistrictsView();
+    } catch (e) {
+      alert("Ошибка: " + e.message);
+    }
+  });
+
+  content.appendChild(okButton);
+
+
 }
 
 
-document.getElementById("close-modal").addEventListener("click", () => {
-  document.getElementById("district-modal").classList.add("hidden");
-});
+document.getElementById("close-modal").addEventListener("click", closeDistrictModal);
 
+function closeDistrictModal() {
+  document.getElementById("district-modal").classList.add("hidden");
+  currentModalClone = null;
+  currentModalRecord = null;
+}
 
 
 function removeDistrict(id) {
