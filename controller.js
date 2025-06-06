@@ -1,7 +1,7 @@
 // controller.js – полностью переписан с учётом требований
 import { PR_METHODS, allocateDistrict } from "./allocators.js";
 import { buildSVG } from "./svg-utils.js";
-const METHODS = Object.values(PR_METHODS);
+const METHODS = ["hare", "saintelague", "droop", "imperiali", "dhondt"];
 
 const MAX_DISTRICTS = 650;
 let districtsContainer;
@@ -326,11 +326,16 @@ function recalculateAll() {
     resultsContainer.appendChild(mount);
 
     const mTotals = nationalSeats.get(method);
-    const allocationArr = Array.from(mTotals.entries()).map(([partyId, seats]) => ({
-      partyId,
-      seats,
-      color: (partyRegistry.get(partyId) || {}).color || "#888888"
-    })).sort((a, b) => b.seats - a.seats);
+    const allocationArr = Array.from(mTotals.entries())
+      .filter(([_, seats]) => seats > 0)
+      .map(([partyId, seats]) => ({
+        partyId,
+        seats,
+        color: (partyRegistry.get(partyId) || {}).color || "#888888"
+      }))
+      .sort((a, b) => b.seats - a.seats);
+
+
 
     const legendArr = allocationArr.map((a) => {
       const votes = nationalVotes.get(a.partyId) || 0;
@@ -368,11 +373,15 @@ function recalculateAll() {
     parsedDistricts.forEach((district) => {
       const allocation = allocateDistrict(district, method, { overAllocRule: district.overAllocRule });
 
-      const allocationArr = Object.entries(allocation).map(([partyId, seats]) => ({
-        partyId,
-        seats,
-        color: (partyRegistry.get(partyId) || {}).color || "#888888"
-      })).sort((a, b) => b.seats - a.seats);
+      const allocationArr = Object.entries(allocation)
+        .filter(([_, seats]) => seats > 0)
+        .map(([partyId, seats]) => ({
+          partyId,
+          seats,
+          color: (partyRegistry.get(partyId) || {}).color || "#888888"
+        }))
+        .sort((a, b) => b.seats - a.seats);
+
 
       const totalDistrictSeats = allocationArr.reduce((sum, p) => sum + p.seats, 0);
       const totalDistrictVotes = district.parties.reduce((sum, p) => sum + p.votes, 0);
@@ -439,11 +448,11 @@ function renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes,
   table.appendChild(thead);
 
   // Собираем список всех партий, включая "DISPUTED"
-  const allPartyIds = new Set();
-  METHODS.forEach(method => {
-    const mTotals = nationalSeats.get(method);
-    mTotals.forEach((_, partyId) => allPartyIds.add(partyId));
-  });
+  // Сортируем партии по числу голосов по убыванию
+  const allPartyIds = Array.from(nationalVotes.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([partyId]) => partyId);
+
 
   const rows = [];
   for (const partyId of allPartyIds) {
