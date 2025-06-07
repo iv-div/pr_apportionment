@@ -776,4 +776,11 @@ export function init() {
 
   qs("#csv-import")?.addEventListener("change", handleCSVUpload);
 
+  qs("#scroll-to-results")?.addEventListener("click", () => {
+    const anchor = document.getElementById("results-anchor");
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+
 }

@@ -1,0 +1,133 @@
+﻿district_name;seats;party;votes
+Østfold;8;Det norske Arbeiderparti;63041
+Østfold;8;Høyre;24330
+Østfold;8;Kristelig Folkeparti;11109
+Østfold;8;Norges Kommunistiske Parti;1380
+Østfold;8;Sosialistisk Folkeparti;8051
+Østfold;8;Fellesliste Senterpartiet og Venstre;14713
+Akershus;7;Det norske Arbeiderparti;64882
+Akershus;7;Høyre;38878
+Akershus;7;Kristelig Folkeparti;6868
+Akershus;7;Norges Kommunistiske Parti;1879
+Akershus;7;Senterpartiet;13511
+Akershus;7;Sosialistisk Folkeparti;9866
+Akershus;7;Venstre;16243
+Oslo;13;Det norske Arbeiderparti;122953
+Oslo;13;Høyre;118279
+Oslo;13;Kristelig Folkeparti;15566
+Oslo;13;Norges Kommunistiske Parti;4523
+Oslo;13;Sosialistisk Folkeparti;23930
+Oslo;13;Venstre;20704
+Oslo;13;Andre lister;163
+Hedmark;8;Det norske Arbeiderparti;59484
+Hedmark;8;Høyre;10853
+Hedmark;8;Norges Kommunistiske Parti;5703
+Hedmark;8;Senterpartiet;20173
+Hedmark;8;Sosialistisk Folkeparti;5344
+Hedmark;8;Venstre;2666
+Hedmark;8;Andre lister;1
+Oppland;7;Det norske Arbeiderparti;50755
+Oppland;7;Høyre;10735
+Oppland;7;Kristelig Folkeparti;3890
+Oppland;7;Norges Kommunistiske Parti;1078
+Oppland;7;Senterpartiet;18951
+Oppland;7;Sosialistisk Folkeparti;4423
+Oppland;7;Venstre;4992
+Buskerud;7;Det norske Arbeiderparti;56798
+Buskerud;7;Høyre;23473
+Buskerud;7;Kristelig Folkeparti;5534
+Buskerud;7;Norges Kommunistiske Parti;1811
+Buskerud;7;Senterpartiet;11943
+Buskerud;7;Sosialistisk Folkeparti;8403
+Buskerud;7;Venstre;3801
+Vestfold;7;Det norske Arbeiderparti;39750
+Vestfold;7;Høyre;30172
+Vestfold;7;Norges Kommunistiske Parti;666
+Vestfold;7;Senterpartiet;10057
+Vestfold;7;Sosialistisk Folkeparti;4528
+Vestfold;7;Venstre;8502
+Telemark;6;Det norske Arbeiderparti;42952
+Telemark;6;Høyre;11369
+Telemark;6;Kristelig Folkeparti;13453
+Telemark;6;Norges Kommunistiske Parti;1049
+Telemark;6;Sosialistisk Folkeparti;7962
+Telemark;6;Venstre;11299
+Aust-Agder;4;Det norske Arbeiderparti;17556
+Aust-Agder;4;Høyre;7285
+Aust-Agder;4;Kristelig Folkeparti;6214
+Aust-Agder;4;Norges Kommunistiske Parti;119
+Aust-Agder;4;Senterpartiet;2994
+Aust-Agder;4;Sosialistisk Folkeparti;1337
+Aust-Agder;4;Venstre;6748
+Vest-Agder;5;Det norske Arbeiderparti;19413
+Vest-Agder;5;Høyre;10313
+Vest-Agder;5;Kristelig Folkeparti;7794
+Vest-Agder;5;Senterpartiet;6005
+Vest-Agder;5;Sosialistisk Folkeparti;2643
+Vest-Agder;5;Venstre;15045
+Rogaland;10;Det norske Arbeiderparti;43020
+Rogaland;10;Høyre;23510
+Rogaland;10;Kristelig Folkeparti;20895
+Rogaland;10;Norges Kommunistiske Parti;876
+Rogaland;10;Senterpartiet;15053
+Rogaland;10;Sosialistisk Folkeparti;5112
+Rogaland;10;Venstre;23394
+Rogaland;10;Andre lister;194
+Hordaland;10;Det norske Arbeiderparti;39572
+Hordaland;10;Høyre;22791
+Hordaland;10;Kristelig Folkeparti;17600
+Hordaland;10;Norges Kommunistiske Parti;903
+Hordaland;10;Senterpartiet;12089
+Hordaland;10;Sosialistisk Folkeparti;5207
+Hordaland;10;Venstre;20760
+Bergen;5;Det norske Arbeiderparti;28787
+Bergen;5;Sosialistisk Folkeparti;4778
+Bergen;5;Venstre;11276
+Bergen;5;Fellesliste Høyre og Kristelig Folkeparti;22800
+Sogn og Fjordane;5;Det norske Arbeiderparti;15745
+Sogn og Fjordane;5;Høyre;7722
+Sogn og Fjordane;5;Kristelig Folkeparti;7439
+Sogn og Fjordane;5;Senterpartiet;10283
+Sogn og Fjordane;5;Sosialistisk Folkeparti;1169
+Sogn og Fjordane;5;Venstre;8008
+Møre og Romsdal;10;Det norske Arbeiderparti;36055
+Møre og Romsdal;10;Høyre;11154
+Møre og Romsdal;10;Kristelig Folkeparti;18531
+Møre og Romsdal;10;Senterpartiet;21042
+Møre og Romsdal;10;Sosialistisk Folkeparti;4673
+Møre og Romsdal;10;Venstre;18390
+Møre og Romsdal;10;Andre lister;6
+Sør-Trøndelag;10;Det norske Arbeiderparti;55155
+Sør-Trøndelag;10;Høyre;24134
+Sør-Trøndelag;10;Kristelig Folkeparti;9328
+Sør-Trøndelag;10;Norges Kommunistiske Parti;2738
+Sør-Trøndelag;10;Senterpartiet;14513
+Sør-Trøndelag;10;Sosialistisk Folkeparti;6316
+Sør-Trøndelag;10;Venstre;10194
+Nord-Trøndelag;6;Det norske Arbeiderparti;26475
+Nord-Trøndelag;6;Høyre;4413
+Nord-Trøndelag;6;Kristelig Folkeparti;4124
+Nord-Trøndelag;6;Norges Kommunistiske Parti;681
+Nord-Trøndelag;6;Senterpartiet;14310
+Nord-Trøndelag;6;Sosialistisk Folkeparti;3440
+Nord-Trøndelag;6;Venstre;7530
+Nordland;12;Det norske Arbeiderparti;53185
+Nordland;12;Høyre;18199
+Nordland;12;Kristelig Folkeparti;10553
+Nordland;12;Norges Kommunistiske Parti;1447
+Nordland;12;Senterpartiet;12724
+Nordland;12;Sosialistisk Folkeparti;10178
+Nordland;12;Venstre;8629
+Troms;6;Det norske Arbeiderparti;28861
+Troms;6;Høyre;10783
+Troms;6;Norges Kommunistiske Parti;719
+Troms;6;Senterpartiet;8054
+Troms;6;Sosialistisk Folkeparti;3147
+Troms;6;Venstre;7884
+Finnmark;4;Det norske Arbeiderparti;18881
+Finnmark;4;Høyre;7219
+Finnmark;4;Kristelig Folkeparti;1433
+Finnmark;4;Norges Kommunistiske Parti;2424
+Finnmark;4;Sosialistisk Folkeparti;2214
+Finnmark;4;Venstre;1769
+Finnmark;4;Andre lister;1
