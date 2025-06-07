@@ -108,7 +108,7 @@ export function allocateDistrict (district, method, opts = {}) {
     switch (method) {
       case PR_METHODS.DHONDT: divisorFn = allocatedSeats => allocatedSeats + 1; break;
       case PR_METHODS.SAINT_LAGUE: divisorFn = allocatedSeats => (2 * allocatedSeats) + 1; break;
-      case PR_METHODS.MODIFIED_SAINT_LAGUE: divisorFn = allocatedSeats => allocatedSeats === 0 ? 0.7 : (2 * allocatedSeats) + 1; break;
+      case PR_METHODS.MODIFIED_SAINT_LAGUE: divisorFn = allocatedSeats => allocatedSeats === 0 ? 1.4 : (2 * allocatedSeats) + 1; break;
       default: throw new Error(`Unknown divisor method: ${method}`);
     }
     seatCountsArray = divisorMethodInternal(
