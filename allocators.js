@@ -33,8 +33,10 @@ export const PR_METHODS = Object.freeze({
   DROOP: 'droop',
   IMPERIALI: 'imperiali',
   DHONDT: 'dhondt',
-  SAINT_LAGUE: 'saintelague'
+  SAINT_LAGUE: 'saintelague',
+  MODIFIED_SAINT_LAGUE: 'modifiedsaintelague'  //
 });
+
 
 function generateDisputedId(candidates) {
   const ids = candidates.map(c => c.partyId).sort();
@@ -101,11 +103,12 @@ export function allocateDistrict (district, method, opts = {}) {
       overAllocRule,
       cfg.tieBreak || 'largestVotes' // Default tieBreak
     );
-  } else if ([PR_METHODS.DHONDT, PR_METHODS.SAINT_LAGUE].includes(method)) {
+  } else if ([PR_METHODS.DHONDT, PR_METHODS.SAINT_LAGUE, PR_METHODS.MODIFIED_SAINT_LAGUE].includes(method)) {
     let divisorFn;
     switch (method) {
       case PR_METHODS.DHONDT: divisorFn = allocatedSeats => allocatedSeats + 1; break;
       case PR_METHODS.SAINT_LAGUE: divisorFn = allocatedSeats => (2 * allocatedSeats) + 1; break;
+      case PR_METHODS.MODIFIED_SAINT_LAGUE: divisorFn = allocatedSeats => allocatedSeats === 0 ? 0.7 : (2 * allocatedSeats) + 1; break;
       default: throw new Error(`Unknown divisor method: ${method}`);
     }
     seatCountsArray = divisorMethodInternal(
@@ -151,7 +154,7 @@ export function allocateDistrict (district, method, opts = {}) {
     }
   });
 
-  // Добавляем нулевые записи для всех спорных партий
+  // Add zeros for disputed parties
   eligiblePartiesInternal
     .filter(p => p.partyId.startsWith("DISPUTED_"))
     .forEach(p => {

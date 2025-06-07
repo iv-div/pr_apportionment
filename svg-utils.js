@@ -5,7 +5,7 @@ export function svgToPng(containerEl, title) {
   const svgEl = containerEl.querySelector('svg');
   const clone = svgEl.cloneNode(true);
 
-  // Создаем временный SVG-элемент в строке
+  // Create a temporary SVG-element in the line
   const svgStr = new XMLSerializer().serializeToString(clone);
   const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
@@ -76,7 +76,7 @@ export function buildSVG(cfg) {
 
   const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   titleText.setAttribute('x', canvasWidth / 2);
-  titleText.setAttribute('y', 40); // или 30 — можно подогнать по стилю
+  titleText.setAttribute('y', 40); 
   titleText.setAttribute('text-anchor', 'middle');
   titleText.setAttribute('font-size', '24');
   titleText.setAttribute('font-family', 'sans-serif');
@@ -194,14 +194,14 @@ export function buildSVG(cfg) {
     if (!cfg.isNational && row.name.startsWith("DISPUTED_")) {
       const ids = row.name.slice(9).split('_');
       const names = ids.map(id => cfg.partyIdToNameMap?.[id] || id);
-      displayName = `Спорные мандаты: (${names.join(', ')})`;
+      displayName = `Disputed mandates: (${names.join(', ')})`;
     } else if (cfg.isNational && row.name.startsWith("DISPUTED_")) {
-      displayName = "Спорные мандаты";
+      displayName = "Disputed mandates";
     }
 
     const lines = [
       displayName,
-      `Мандаты: ${row.seats}`
+      `Seats: ${row.seats}`
     ];
     lines.forEach((line, i) => {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');

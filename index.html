@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Многоокружный калькулятор мандатов</title>
+  <title>Proportional Representation Mandate Calculator</title>
   <script type="module" src="./main.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -11,24 +11,24 @@
 </head>
 <body class="bg-slate-100 text-slate-700">
   <main class="max-w-4xl mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold mb-6">Многоокружный калькулятор мандатов</h1>
+    <h1 class="text-3xl font-bold mb-6">Proportional Representation Mandate Calculator</h1>
 
     <div class="flex flex-wrap gap-4 mb-4">
       <button id="add-district" type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
-        + Добавить округ
+        + Add District
       </button>
       <button id="generate-example" type="button" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded shadow">
-        Сгенерировать пример
+        Example
       </button>
       <button id="generate" type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
-        Сгенерировать национальную диаграмму
+        Generate Diagramm
       </button>
       <a href="template.csv" download class="text-blue-600 underline text-sm self-center">
-        📄 Скачать шаблон CSV
+        Download CSV template
       </a>
       <input type="file" id="csv-import" accept=".csv" class="hidden" />
       <button type="button" id="upload-csv" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow">
-        📤 Импорт из CSV
+        Import CSV
       </button>
 
     </div>
@@ -39,27 +39,27 @@
     <template id="district-template">
       <section class="bg-white p-4 rounded-xl shadow-xl border space-y-4">
         <div class="flex items-center justify-between">
-          <input type="text" class="district-name font-semibold text-lg border p-2 rounded w-full mr-2" placeholder="Название округа" />
-          <button type="button" class="clone-district text-blue-600 text-sm">📋 Клонировать</button>
-          <button type="button" class="remove-district text-red-600 ml-2 text-sm">✕ Удалить</button>
+          <input type="text" class="district-name font-semibold text-lg border p-2 rounded w-full mr-2" placeholder="District name" />
+          <button type="button" class="clone-district text-blue-600 text-sm">Clone</button>
+          <button type="button" class="remove-district text-red-600 ml-2 text-sm">Delete</button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <label class="block">
-            <span class="text-sm">Число мандатов</span>
+            <span class="text-sm">Number of seats</span>
             <input type="number" class="seats w-full border p-1" value="6" min="1" />
           </label>
         </div>
 
         <details class="mt-2 bg-slate-100 p-3 rounded border text-sm">
-          <summary class="cursor-pointer font-medium mb-2">Дополнительные настройки</summary>
+          <summary class="cursor-pointer font-medium mb-2">Additional settings</summary>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
             <label class="block">
-              <span class="text-sm">Проходной барьер (%)</span>
+              <span class="text-sm">Barrier (%)</span>
               <input type="number" class="threshold w-full border p-1" value="0" step="any" min="0" max="100" />
             </label>
             <label class="block">
-              <span class="text-sm">Разрешение ничьей</span>
+              <span class="text-sm">Tie-break rule</span>
               <select class="tie-break w-full border p-1">
                 <option value="disputed">Disputed</option>
                 <option value="random">Random</option>
@@ -69,7 +69,7 @@
               </select>
             </label>
             <label class="block">
-              <span class="text-sm">Правило переполнения</span>
+              <span class="text-sm">Over-allocation rule</span>
               <select class="over-alloc w-full border p-1">
                 <option value="increase">Increase seat count</option>
                 <option value="adjust-quota">Adjust quota</option>
@@ -83,15 +83,15 @@
           <table class="w-full text-sm border mt-2">
             <thead>
               <tr class="bg-slate-200">
-                <th class="p-1 border">Название</th>
-                <th class="p-1 border">Голоса</th>
-                <th class="p-1 border">Цвет</th>
+                <th class="p-1 border">Name</th>
+                <th class="p-1 border">Votes</th>
+                <th class="p-1 border">Colour</th>
                 <th class="p-1 border"></th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
-          <button type="button" class="add-party mt-2 text-green-700 text-sm">+ Добавить партию</button>
+          <button type="button" class="add-party mt-2 text-green-700 text-sm">+ Add a party</button>
         </div>
       </section>
     </template>
@@ -100,26 +100,26 @@
 
 <div id="import-preview" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
   <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-    <h2 class="text-xl font-semibold">Предпросмотр импорта</h2>
+    <h2 class="text-xl font-semibold">Import preview</h2>
     <div id="import-summary" class="text-sm"></div>
 
     <div class="mt-4">
-      <label class="block text-sm font-medium">Проходной барьер (%):</label>
+      <label class="block text-sm font-medium">Barrier (%):</label>
       <input type="number" id="import-threshold" class="border p-1 w-full" min="0" max="100" step="any" value="0" />
     </div>
 
     <div class="mt-2">
-      <label class="block text-sm font-medium">Правило over-allocation:</label>
+      <label class="block text-sm font-medium"> Over-allocation rule:</label>
       <select id="import-overalloc" class="border p-1 w-full">
-        <option value="increase">Увеличить общее число мандатов</option>
-        <option value="adjust-quota">Изменить квоту</option>
-        <option value="remove-large">Убрать у крупных</option>
-        <option value="remove-small">Убрать у мелких</option>
+        <option value="increase">Add seats</option>
+        <option value="adjust-quota">Change quota</option>
+        <option value="remove-large">Substract from large</option>
+        <option value="remove-small">Substract from small</option>
       </select>
     </div>
 
     <div class="mt-2">
-      <label class="block text-sm font-medium">Правило разрешения ничьей:</label>
+      <label class="block text-sm font-medium">Tie-break rule:</label>
       <select id="import-tiebreak" class="border p-1 w-full">
         <option value="disputed">Disputed</option>
         <option value="random">Random</option>
@@ -129,12 +129,12 @@
       </select>
     </div>
 
-    <h3 class="text-sm font-semibold mt-4">Партии:</h3>
+    <h3 class="text-sm font-semibold mt-4">Parties:</h3>
     <div id="import-parties" class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm"></div>
 
     <div class="flex justify-end gap-4 mt-6">
-      <button id="cancel-import" class="text-gray-600 hover:underline">Отмена</button>
-      <button id="confirm-import" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Импортировать</button>
+      <button id="cancel-import" class="text-gray-600 hover:underline">Cancel</button>
+      <button id="confirm-import" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Import</button>
     </div>
   </div>
 </div>

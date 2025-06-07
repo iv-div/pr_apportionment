@@ -1,7 +1,6 @@
-// controller.js – полностью переписан с учётом требований
 import { PR_METHODS, allocateDistrict } from "./allocators.js";
 import { buildSVG } from "./svg-utils.js";
-const METHODS = ["hare", "saintelague", "droop", "imperiali", "dhondt"];
+const METHODS = ["hare", "saintelague", "modifiedsaintelague", "droop", "imperiali", "dhondt"];
 
 const MAX_DISTRICTS = 650;
 let districtsContainer;
@@ -50,7 +49,7 @@ function getNextPartyId() {
 
 function addDistrict({ cloneSourceEl = null, emptyParties = false, example = false } = {}) {
   if (districts.size >= MAX_DISTRICTS) {
-    alert(`Максимум ${MAX_DISTRICTS} округов.`);
+    alert(`Maximum number of districts ${MAX_DISTRICTS}.`);
     return;
   }
 
@@ -61,7 +60,7 @@ function addDistrict({ cloneSourceEl = null, emptyParties = false, example = fal
 
   const nameInput = qs(".district-name", districtEl);
   const sourceName = cloneSourceEl ? qs(".district-name", cloneSourceEl)?.value : null;
-  nameInput.value = sourceName ? sourceName + " (copy)" : `Округ #${id}`;
+  nameInput.value = sourceName ? sourceName + " (copy)" : `District #${id}`;
 
   const seatsInput = qs(".seats", districtEl);
   if (cloneSourceEl) {
@@ -136,7 +135,7 @@ function addPartyRow(tbody, { id = "", name = "", color = getNextColor(), votes 
   row.innerHTML = `
     <td>
       <input type="hidden" class="party-id" value="${id}" />
-      <input type="text" class="party-name w-full border p-1" value="${name}" placeholder="Название партии" list="party-suggestions" />
+      <input type="text" class="party-name w-full border p-1" value="${name}" placeholder="Party name" list="party-suggestions" />
     </td>
     <td><input type="number" class="party-votes w-full border p-1 text-right" min="0" value="${votes}" /></td>
     <td><input type="color" class="party-color w-full" value="${color}" /></td>
@@ -167,20 +166,20 @@ function syncPartyRegistryFromRow(row) {
   let id = idInput?.value.trim();
   const typedName = nameInput?.value.trim();
 
-  // Если ID ещё не задан, ищем по имени
+  // If ID is not assigned, search for name
   if (!id && typedName) {
     for (const [existingId, data] of partyRegistry.entries()) {
       if (data.name === typedName) {
         id = existingId;
         if (idInput) idInput.value = id;
-        // Подставляем существующий цвет
+        // Add colour
         if (colorInput) colorInput.value = data.color;
         break;
       }
     }
   }
 
-  // Если всё ещё нет ID — создаём новый
+  // If still no ID: create new
   if (!id) {
     id = getNextPartyId();
     if (idInput) idInput.value = id;
@@ -195,7 +194,7 @@ function syncPartyRegistryFromRow(row) {
   if (changed) {
     partyRegistry.set(id, { name, color });
 
-    // Обновляем все строки с таким же ID
+    // Refresh all lines with the same ID
     qsa("tr").forEach((r) => {
       const pidInput = r.querySelector(".party-id");
       if (pidInput && pidInput.value.trim() === id && r !== row) {
@@ -214,7 +213,7 @@ function updatePartySuggestions() {
   const datalist = document.getElementById("party-suggestions");
   if (!datalist) return;
 
-  // Удалим старые опции
+  // Delete old options
   datalist.innerHTML = "";
 
   for (const { name } of partyRegistry.values()) {
@@ -228,7 +227,7 @@ function updatePartySuggestions() {
 
 function parseDistrict(record) {
   const el = record.el;
-  const name = qs(".district-name", el)?.value.trim() || `Округ ${record.el.dataset.districtId}`;
+  const name = qs(".district-name", el)?.value.trim() || `District ${record.el.dataset.districtId}`;
   const seats = parseInt(qs(".seats", el)?.value, 10) || 0;
   const threshold = parseFloat(qs(".threshold", el)?.value) || 0;
   const tieBreak = qs(".tie-break", el)?.value || "random";
@@ -244,8 +243,8 @@ function parseDistrict(record) {
     parties.push({ partyId, votes, name: partyName, color });
   });
 
-  if (seats <= 0) throw new Error(`Округ "${name}": число мандатов должно быть > 0`);
-  if (parties.length === 0) throw new Error(`Округ "${name}" не содержит ни одной партии с голосами`);
+  if (seats <= 0) throw new Error(`District "${name}": number of mandates must be > 0`);
+  if (parties.length === 0) throw new Error(`District "${name}" does not have parties with votes`);
 
   return {
     id: record.el.dataset.districtId,
@@ -299,17 +298,17 @@ function recalculateAll() {
       }
     });
 
-    // 🔧 Объединяем DISPUTED_... в одну DISPUTED
+    // Collect all DISPUTED_... into a single DISPUTED
     const mTotals = new Map();
     for (const [partyId, seats] of rawTotals.entries()) {
       const key = partyId.startsWith("DISPUTED_") ? "DISPUTED" : partyId;
       mTotals.set(key, (mTotals.get(key) || 0) + seats);
     }
 
-    // ✅ Регистрируем для визуализации
+    // Register for visualisation
     if (mTotals.has("DISPUTED")) {
       partyRegistry.set("DISPUTED", {
-        name: "Спорные мандаты",
+        name: "Disputed mandates",
         color: "#D1D5DB"
       });
     }
@@ -360,14 +359,14 @@ function recalculateAll() {
       isNational: true
     });
 
-    // Создаем общий раскрывающийся блок для всех округов по текущему методу
+    // A common wrapper for all districts with this method
     const methodWrapper = document.createElement("details");
     methodWrapper.className = "mb-6 border rounded p-3 bg-gray-50";
     methodWrapper.open = false;
 
     const methodSummary = document.createElement("summary");
     methodSummary.className = "cursor-pointer font-bold";
-    methodSummary.textContent = `Диаграммы по округам — метод ${methodLabel(method)}`;
+    methodSummary.textContent = `District diagrams, method: ${methodLabel(method)}`;
     methodWrapper.appendChild(methodSummary);
 
     parsedDistricts.forEach((district) => {
@@ -403,7 +402,7 @@ function recalculateAll() {
 
       const summary = document.createElement("summary");
       summary.className = "cursor-pointer font-semibold";
-      summary.textContent = `Округ: ${district.name}`;
+      summary.textContent = `District: ${district.name}`;
       wrapper.appendChild(summary);
 
       const mount = document.createElement("div");
@@ -423,7 +422,7 @@ function recalculateAll() {
       methodWrapper.appendChild(wrapper);
     });
 
-    // Добавляем группировку в результат
+    // Add grouping in the result
     resultsContainer.appendChild(methodWrapper);
 
 
@@ -441,14 +440,14 @@ function renderSummaryTable({ METHODS, nationalSeats, nationalVotes, totalVotes,
   const thead = document.createElement("thead");
   thead.innerHTML = `
     <tr class="bg-slate-200">
-      <th class="border border-gray-400 px-2 py-1 text-left">Партия</th>
-      <th class="border border-gray-400 px-2 py-1 text-right">Голоса (%)</th>
+      <th class="border border-gray-400 px-2 py-1 text-left">Party</th>
+      <th class="border border-gray-400 px-2 py-1 text-right">Votes (%)</th>
       ${METHODS.map(m => `<th class="border border-gray-400 px-2 py-1 text-right">${methodLabel(m)}</th>`).join('')}
     </tr>`;
   table.appendChild(thead);
 
-  // Собираем список всех партий, включая "DISPUTED"
-  // Сортируем партии по числу голосов по убыванию
+  // Make a list of all parties including "DISPUTED"
+  // Sort parties by descending votes
   const allPartyIds = Array.from(nationalVotes.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([partyId]) => partyId);
@@ -491,6 +490,7 @@ function methodLabel(method) {
     case "imperiali": return "Imperiali";
     case "dhondt": return "D’Hondt";
     case "saintelague": return "Sainte‑Laguë";
+    case "modifiedsaintelague": return "Modified Sainte‑Laguë";
     default: return method;
   }
 }
@@ -511,7 +511,7 @@ function handleCSVUpload(event) {
     complete: (results) => {
       const rows = results.data;
 
-      // ✅ Сначала валидация
+      // Validate first
       if (!validateParsedCSV(rows)) return;
 
       const districts = new Map();
@@ -525,7 +525,7 @@ function handleCSVUpload(event) {
         const votes = parseInt(row["votes"], 10);
 
         if (!districtName || !party || isNaN(seats) || isNaN(votes)) {
-          errors.push(`Строка с данными пропущена из-за некорректных значений: ${JSON.stringify(row)}`);
+          errors.push(`The line is ommited because of incorrect values: ${JSON.stringify(row)}`);
           continue;
         }
 
@@ -539,7 +539,7 @@ function handleCSVUpload(event) {
 
         const district = districts.get(districtName);
         if (district.seats !== seats) {
-          errors.push(`Округ "${districtName}" указан с разным числом мандатов: ${district.seats} и ${seats}`);
+          errors.push(`District "${districtName}" has different number of seats: ${district.seats} and ${seats}`);
           continue;
         }
 
@@ -555,23 +555,23 @@ function handleCSVUpload(event) {
       }
 
       if (errors.length > 0) {
-        alert("⚠️ Обнаружены ошибки при загрузке CSV:\n\n" + errors.join("\n"));
+        alert("Mistakes while loading CSV:\n\n" + errors.join("\n"));
         return;
       }
 
-      // ✅ Показываем предпросмотр
+      // Preview
       previewImport(districts, partyStats);
     },
 
     error: (err) => {
-      alert("Ошибка при чтении CSV: " + err.message);
+      alert("Mistake while loading CSV: " + err.message);
     }
   });
 }
 
 
 function createDistrictsFromImport(importedDistricts, partyStats, globalSettings) {
-  // Очищаем интерфейс и состояние
+  // Clearing interface and status
   districtsContainer.innerHTML = "";
   districts.clear();
   partyRegistry.clear();
@@ -579,7 +579,7 @@ function createDistrictsFromImport(importedDistricts, partyStats, globalSettings
   districtCounter = 0;
   nextColorIndex = 0;
 
-  // Регистрируем партии
+  // Registering parties
   for (const [id, party] of partyStats.entries()) {
     partyRegistry.set(id, {
       name: party.name,
@@ -587,7 +587,7 @@ function createDistrictsFromImport(importedDistricts, partyStats, globalSettings
     });
   }
 
-  // Создаем округа
+  // Creating districts
   for (const imported of importedDistricts.values()) {
     const id = nextDistrictId();
     const template = qs("#district-template");
@@ -639,17 +639,17 @@ function previewImport(districts, partyStats) {
   const summary = qs("#import-summary");
   const partyContainer = qs("#import-parties");
 
-  // Заполняем сводку
+  // Making total seats
   let totalSeats = 0;
   for (const d of districts.values()) totalSeats += d.seats;
 
   summary.innerHTML = `
-    <p><strong>Округов:</strong> ${districts.size}</p>
-    <p><strong>Всего мандатов:</strong> ${totalSeats}</p>
-    <p><strong>Партий:</strong> ${partyStats.size}</p>
+    <p><strong>Districts:</strong> ${districts.size}</p>
+    <p><strong>Total seats:</strong> ${totalSeats}</p>
+    <p><strong>Parties:</strong> ${partyStats.size}</p>
   `;
 
-  // Отрисовываем список партий
+  // Making party list
   partyContainer.innerHTML = "";
   for (const [id, party] of partyStats.entries()) {
     const color = getNextColor();
@@ -660,15 +660,15 @@ function previewImport(districts, partyStats) {
     div.innerHTML = `
       <input type="color" class="party-color-picker border" value="${color}" data-party-id="${id}">
       <span class="flex-1 truncate">${party.name}</span>
-      <span class="text-gray-500 text-xs">(${party.totalVotes} голосов)</span>
+      <span class="text-gray-500 text-xs">(${party.totalVotes} votes)</span>
     `;
     partyContainer.appendChild(div);
   }
 
-  // Показываем модалку
+  // Show modal
   modal.classList.remove("hidden");
 
-  // Кнопки
+  // Buttons
   qs("#cancel-import").onclick = () => {
     modal.classList.add("hidden");
     qs("#csv-import").value = "";
@@ -679,7 +679,7 @@ function previewImport(districts, partyStats) {
     const overAllocRule = qs("#import-overalloc").value;
     const tieBreak = qs("#import-tiebreak").value;
 
-    // Обновим цвета
+    // Refresh colours
     qsa(".party-color-picker").forEach((input) => {
       const id = input.dataset.partyId;
       const party = partyStats.get(id);
@@ -698,7 +698,7 @@ function validateParsedCSV(rows) {
   const seenRows = new Set();
 
   rows.forEach((row, i) => {
-    const line = i + 2; // учитываем заголовок
+    const line = i + 2; // accounting for header
 
     const d = row["district_name"]?.trim();
     const seats = row["seats"];
@@ -706,7 +706,7 @@ function validateParsedCSV(rows) {
     const votes = row["votes"];
 
     if (!d || !seats || !party || !votes) {
-      errors.push(`Строка ${line}: отсутствуют обязательные поля.`);
+      errors.push(`Line ${line}: mandatory fields missing.`);
       return;
     }
 
@@ -714,33 +714,33 @@ function validateParsedCSV(rows) {
     const voteNum = parseInt(votes, 10);
 
     if (isNaN(seatNum) || seatNum <= 0) {
-      errors.push(`Строка ${line}: некорректное значение мандатов "${seats}".`);
+      errors.push(`Line ${line}: incorrect number of seats "${seats}".`);
     }
 
     if (isNaN(voteNum) || voteNum < 0) {
-      errors.push(`Строка ${line}: некорректное значение голосов "${votes}".`);
+      errors.push(`Line ${line}: incorrect number of votes "${votes}".`);
     }
 
     if (seatCountByDistrict.has(d)) {
       const prevSeats = seatCountByDistrict.get(d);
       if (prevSeats !== seatNum) {
-        errors.push(`Округ "${d}" указан с разным числом мандатов (${prevSeats} и ${seatNum}).`);
+        errors.push(`District "${d}" has different number of seats (${prevSeats} and ${seatNum}).`);
       }
     } else {
       seatCountByDistrict.set(d, seatNum);
     }
 
-    // ✅ Проверка на дубликаты строк
+    // Check rows for duplicates
     const rowKey = `${d}|${seatNum}|${party}|${voteNum}`;
     if (seenRows.has(rowKey)) {
-      errors.push(`Строка ${line}: дубликат строки (округ "${d}", партия "${party}", голоса: ${voteNum})`);
+      errors.push(`Row ${line}: duplicate (district "${d}", party "${party}", votes: ${voteNum})`);
     } else {
       seenRows.add(rowKey);
     }
   });
 
   if (errors.length > 0) {
-    alert("Ошибка в CSV:\n\n" + errors.join("\n"));
+    alert("Error in CSV:\n\n" + errors.join("\n"));
     return false;
   }
 
@@ -757,7 +757,7 @@ export function init() {
   qs("#generate").addEventListener("click", () => recalculateAll());
   addDistrict({ emptyParties: true });
 
-    // 🔒 Блокировка scroll и стрелок ↑/↓ на всех number-полях
+    // Block scroll and arrows in number-field
   document.addEventListener("wheel", (e) => {
     if (document.activeElement.type === "number" && document.activeElement === e.target) {
       e.preventDefault();
