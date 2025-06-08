@@ -496,10 +496,73 @@ function methodLabel(method) {
 }
 
 function generateExample() {
-  fetch('./1985Norway.csv')
-    .then(response => response.text())
-    .then(parseAndLoadCSV)
-    .catch(err => alert("File load failed: " + err.message));
+  fetch('1985Norway.csv')
+    .then(response => {
+      if (!response.ok) throw new Error("Cannot load 1985Norway.csv");
+      return response.text();
+    })
+    .then(csvText => {
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const rows = results.data;
+          if (!validateParsedCSV(rows)) return;
+
+          const districts = new Map();
+          const partyStats = new Map();
+          const errors = [];
+
+          for (const row of rows) {
+            const districtName = row["district_name"]?.trim();
+            const seats = parseInt(row["seats"], 10);
+            const party = row["party"]?.trim();
+            const votes = parseInt(row["votes"], 10);
+
+            if (!districtName || !party || isNaN(seats) || isNaN(votes)) {
+              errors.push(`Line skipped: ${JSON.stringify(row)}`);
+              continue;
+            }
+
+            if (!districts.has(districtName)) {
+              districts.set(districtName, {
+                name: districtName,
+                seats,
+                parties: []
+              });
+            }
+
+            const district = districts.get(districtName);
+            if (district.seats !== seats) {
+              errors.push(`District "${districtName}" has inconsistent seat numbers.`);
+              continue;
+            }
+
+            district.parties.push({ partyId: party, name: party, votes });
+
+            const stat = partyStats.get(party) || { name: party, totalVotes: 0 };
+            stat.totalVotes += votes;
+            partyStats.set(party, stat);
+          }
+
+          if (errors.length > 0) {
+            alert("Errors while loading example CSV:\n\n" + errors.join("\n"));
+            return;
+          }
+
+          // Use default import settings
+          const globalSettings = {
+            threshold: 0,
+            tieBreak: "disputed",
+            overAllocRule: "remove-large"
+          };
+          createDistrictsFromImport(districts, partyStats, globalSettings);
+        }
+      });
+    })
+    .catch(err => {
+      alert("Failed to load example CSV: " + err.message);
+    });
 }
 
 
@@ -507,21 +570,14 @@ function handleCSVUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    parseAndLoadCSV(e.target.result);
-  };
-  reader.readAsText(file);
-}
-
-
-
-function parseAndLoadCSV(csvText) {
-  Papa.parse(csvText, {
+  Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
     complete: (results) => {
       const rows = results.data;
+
+      // Validate first
+      if (!validateParsedCSV(rows)) return;
 
       const districts = new Map();
       const partyStats = new Map();
@@ -534,7 +590,7 @@ function parseAndLoadCSV(csvText) {
         const votes = parseInt(row["votes"], 10);
 
         if (!districtName || !party || isNaN(seats) || isNaN(votes)) {
-          errors.push(`Incorrect row: ${JSON.stringify(row)}`);
+          errors.push(`The line is ommited because of incorrect values: ${JSON.stringify(row)}`);
           continue;
         }
 
@@ -548,7 +604,7 @@ function parseAndLoadCSV(csvText) {
 
         const district = districts.get(districtName);
         if (district.seats !== seats) {
-          errors.push(`Inconsistent seat count in "${districtName}"`);
+          errors.push(`District "${districtName}" has different number of seats: ${district.seats} and ${seats}`);
           continue;
         }
 
@@ -564,27 +620,16 @@ function parseAndLoadCSV(csvText) {
       }
 
       if (errors.length > 0) {
-        alert("Errors in example CSV:\n" + errors.join("\n"));
+        alert("Mistakes while loading CSV:\n\n" + errors.join("\n"));
         return;
       }
 
-      const palette = [
-        "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33",
-        "#a65628", "#f781bf", "#999999", "#66c2a5", "#fc8d62"
-      ];
-      let colorIndex = 0;
-      for (const [id, stat] of partyStats.entries()) {
-        stat.color = id.toUpperCase() === "LABOUR PARTY" ? "#e41a1c" : palette[colorIndex++ % palette.length];
-      }
-
-      createDistrictsFromImport(districts, partyStats, {
-        threshold: 0,
-        overAllocRule: "remove-large",
-        tieBreak: "disputed"
-      });
+      // Preview
+      previewImport(districts, partyStats);
     },
+
     error: (err) => {
-      alert("CSV parse error: " + err.message);
+      alert("Mistake while loading CSV: " + err.message);
     }
   });
 }
